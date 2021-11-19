@@ -1,0 +1,22 @@
+[package]
+name = "neon_macros"
+version = "0.1.0"
+description = "A `cargo generate` template for quick-starting a procedural macro crate"
+keywords = ["template", "proc_macro", "procmacro"]
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+proc-macro2 = "1.0"
+syn = "1.0"
+
+neon-serde = { git = "https://github.com/NZXTCorp/neon-serde.git", branch = "refactor/update-neon-0.10" }
+serde = { version = "1.0", features = ["derive"] }
+
+[dependencies.neon]
+version = "0.10.0-alpha.2"
+default-features = false
+features = ["napi-6", "channel-api", "promise-api"]
