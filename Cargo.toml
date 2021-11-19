@@ -1,9 +1,10 @@
 [package]
 name = "neon_macros"
 version = "0.1.0"
-description = "A `cargo generate` template for quick-starting a procedural macro crate"
-keywords = ["template", "proc_macro", "procmacro"]
+description = "Macros for convenieniently expressing JS Classes with Neon apis"
+keywords = ["template", "proc_macro", "procmacro", "Neon", "N-API", "nodejs"]
 edition = "2021"
+license = "MIT"
 
 [lib]
 proc-macro = true
@@ -11,7 +12,7 @@ proc-macro = true
 [dependencies]
 quote = "1"
 proc-macro2 = "1.0"
-syn = "1.0"
+syn = { version = "1.0", features = ["full"] }
 
 neon-serde = { git = "https://github.com/NZXTCorp/neon-serde.git", branch = "refactor/update-neon-0.10" }
 serde = { version = "1.0", features = ["derive"] }
@@ -20,3 +21,11 @@ serde = { version = "1.0", features = ["derive"] }
 version = "0.10.0-alpha.2"
 default-features = false
 features = ["napi-6", "channel-api", "promise-api"]
+
+[dev-dependencies]
+trybuild = "1.0"
+
+[workspace]
+members = [
+    "derived_class"
+]
