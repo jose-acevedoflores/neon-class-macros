@@ -6,11 +6,9 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-neon_macros = { path = "../" }
 neon-serde = { git = "https://github.com/NZXTCorp/neon-serde.git", branch = "refactor/update-neon-0.10" }
+neon_macros = { path = "../" }
 serde = { version = "1.0", features = ["derive"] }
 
 [dependencies.neon]

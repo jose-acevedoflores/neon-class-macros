@@ -10,12 +10,11 @@ license = "MIT"
 proc-macro = true
 
 [dependencies]
-quote = "1"
-proc-macro2 = "1.0"
-syn = { version = "1.0", features = ["full"] }
-
 neon-serde = { git = "https://github.com/NZXTCorp/neon-serde.git", branch = "refactor/update-neon-0.10" }
+proc-macro2 = "1.0"
+quote = "1"
 serde = { version = "1.0", features = ["derive"] }
+syn = { version = "1.0", features = ["full"] }
 
 [dependencies.neon]
 version = "0.10.0-alpha.2"
