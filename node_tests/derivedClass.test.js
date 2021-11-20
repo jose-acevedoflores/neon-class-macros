@@ -1,5 +1,5 @@
-const mod = require('./index.node');
+const mod = require("./index.node");
 
 it("runs", () => {
-    expect(mod.test()).toBe(4);
-})
+  expect(mod.test()).toBe(4);
+});
