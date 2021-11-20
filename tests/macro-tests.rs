@@ -17,7 +17,7 @@ fn try_build() {
     cmd.arg("test")
         .current_dir(path_to_node_tests)
         .spawn()
-        .unwrap_or_else(|_| panic!("Could not run command {:?}", cmd))
+        .unwrap_or_else(|_| panic!("Could not spawn command {:?}", cmd))
         .wait()
-        .unwrap_or_else(|_| panic!("Could not run command {:?}", cmd));
+        .unwrap_or_else(|_| panic!("Could not wait command {:?}", cmd));
 }
