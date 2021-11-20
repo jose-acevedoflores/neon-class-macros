@@ -11,13 +11,23 @@ env:
 
 jobs:
 
-#  commit-checks:
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - uses: actions/checkout@v2
-#
+  # Checks that commits follow the conventional commit guide and blocks fixup/squash commits.
+  commit-checks:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
 
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Block merging fixup commits
+        uses: 13rac1/block-fixup-merge-action@v2.0.0
+
+      - name: Enforce Conventional Commits
+        uses: wagoid/commitlint-github-action@v4
+
+  # Check that the rust and js files are formatted correctly
   format-checks:
     runs-on: ubuntu-latest
 
@@ -44,6 +54,7 @@ jobs:
           npm install
           npm run check:fmt:prettier
 
+  # Main job: builds the crate and runs the tests
   build:
 
     runs-on: ubuntu-latest
