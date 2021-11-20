@@ -1,5 +1,5 @@
-use neon::prelude::{Context, FunctionContext, JsPromise, JsResult, ModuleContext, NeonResult};
-use neon::types::JsUndefined;
+use neon::prelude::{Context, FunctionContext, JsPromise, JsResult};
+use neon::types::{JsNumber, JsUndefined};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -27,6 +27,7 @@ impl TryFrom<DllMap> for HashMap<String, PathBuf> {
         Ok(m)
     }
 }
+
 #[allow(dead_code)]
 #[derive(neon_macros::Class)]
 pub struct TestStruct {
@@ -65,13 +66,6 @@ impl TestStruct {
 #[allow(unused)]
 fn main() {}
 
-fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    Ok(cx.undefined())
-}
-
-#[neon::main]
-fn node_entrypoint(mut cx: ModuleContext) -> NeonResult<()> {
-    cx.export_function("test", test)?;
-
-    Ok(())
+pub(crate) fn test(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    Ok(cx.number(4))
 }
