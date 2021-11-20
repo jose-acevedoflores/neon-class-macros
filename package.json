@@ -2,7 +2,6 @@
   "name": "neon-macros",
   "version": "0.1.0",
   "description": "Add commitizen",
-  "main": "index.js",
   "directories": {
     "test": "tests"
   },
