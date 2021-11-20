@@ -46,6 +46,11 @@ jobs:
         with:
           node-version: '14'
 
+      - name: Check toml files sorting
+        run: |
+          cargo install cargo-sort
+          cargo sort --check
+
       - name: Cargo fmt check
         run: cargo fmt -- --check
 
