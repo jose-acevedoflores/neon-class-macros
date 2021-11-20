@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
-#[cfg( target_os = "linux")]
+#[cfg(target_os = "linux")]
 pub fn locate_npm() -> PathBuf {
     PathBuf::from("npm")
 }
 
-#[cfg( target_os = "windows")]
+#[cfg(target_os = "windows")]
 pub fn locate_npm() -> PathBuf {
     const DEFAULT_NPM_LOCATION: &str = r"C:\Program Files\nodejs\npm.cmd";
     const NPM_LOCATION_ENV_KEY: &str = "NPM_LOCATION";
