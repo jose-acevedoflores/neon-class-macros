@@ -12,7 +12,7 @@ struct KV {
 
 #[derive(Serialize, Deserialize)]
 /// Contain a list of key/value pairs.
-struct DllMap {
+pub struct DllMap {
     map: Vec<KV>,
 }
 
@@ -35,9 +35,10 @@ pub struct TestStruct {
     dll_path_map: HashMap<String, PathBuf>,
 }
 
+#[neon_macros::impl_block]
 impl TestStruct {
     #[neon_macros::constructor(expose)]
-    fn constructor(path_to_exe: String, dll_path_map: DllMap) -> Result<Self, String> {
+    pub fn constructor(path_to_exe: String, dll_path_map: DllMap) -> Result<Self, String> {
         let dll_path_map = dll_path_map.try_into()?;
 
         Ok(Self {
