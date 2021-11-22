@@ -1,5 +1,4 @@
 use proc_macro::TokenStream;
-use std::str::FromStr;
 
 use quote::quote;
 use syn::{
@@ -35,7 +34,7 @@ pub(crate) fn get_gen_constructor_name(orig_name: &proc_macro2::Ident) -> proc_m
     syn::Ident::new(&gen_constructor_name, orig_name.span())
 }
 
-///
+/// Generates a constructor for the JS side based on the annotated method.
 /// ## Attribute Args:
 /// * `expose` - expose this constructor to the JS side.
 #[proc_macro_attribute]
@@ -104,11 +103,26 @@ pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
 pub fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
     let mut impl_ast = parse_macro_input!(input as ItemImpl);
 
-    let this =
-        proc_macro2::TokenStream::from_str("const THIS: &'static str =\"__this_obj\";").unwrap();
-    let this: proc_macro::TokenStream = this.into();
-    let cst = parse_macro_input!(this as ImplItemConst);
-    impl_ast.items.push(ImplItem::Const(cst));
+    let this_token = {
+        let this = quote! {
+            const THIS: &'static str ="__this_obj";
+        };
+        let this: proc_macro::TokenStream = this.into();
+        parse_macro_input!(this as ImplItemConst)
+    };
+
+    impl_ast.items.push(ImplItem::Const(this_token));
+
+    let gen_register_fn = {
+        let gen_register_fn = quote! {
+            pub fn __neon_gen_expose_register(cx: &mut neon::prelude::ModuleContext) -> neon::prelude::NeonResult<()> {
+                Ok(())
+            }
+        };
+        let gen_register_fn: proc_macro::TokenStream = gen_register_fn.into();
+        parse_macro_input!(gen_register_fn as ImplItemMethod)
+    };
+    impl_ast.items.push(ImplItem::Method(gen_register_fn));
 
     let tokens = quote! {
         #impl_ast
