@@ -41,6 +41,12 @@ jobs:
           toolchain: stable
           components: clippy
 
+      - name: Setup Rust nightly (formatting)
+        uses: actions-rs/toolchain@v1
+        with:
+          components: rustfmt
+          toolchain: nightly
+
       - name: Setup node
         uses: actions/setup-node@v2
         with:
@@ -52,7 +58,7 @@ jobs:
           cargo sort --check
 
       - name: Cargo fmt check
-        run: cargo fmt -- --check
+        run: cargo +nightly fmt -- --check
 
       - name: Node fmt check
         run: |
@@ -78,7 +84,10 @@ jobs:
       uses: actions/setup-node@v2
       with:
         node-version: '14'
-    
+
+    - name: Run clippy
+      run: cargo clippy --verbose -- -D warnings
+
     - name: Install node deps
       run: |
        npm install
