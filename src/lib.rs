@@ -2,7 +2,11 @@ use proc_macro::TokenStream;
 use std::str::FromStr;
 
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, ImplItem, ImplItemConst, ImplItemMethod, ItemImpl};
+use syn::{
+    parse_macro_input, DeriveInput, FnArg, ImplItem, ImplItemConst, ImplItemMethod, ItemImpl, Type,
+};
+
+mod utils;
 
 #[proc_macro_attribute]
 pub fn my_attribute(_args: TokenStream, input: TokenStream) -> TokenStream {
@@ -37,15 +41,43 @@ pub(crate) fn get_gen_constructor_name(orig_name: &proc_macro2::Ident) -> proc_m
 #[proc_macro_attribute]
 pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
     let method_ast = parse_macro_input!(input as ImplItemMethod);
-    let gen_constructor_ident = get_gen_constructor_name(&method_ast.sig.ident);
+    let method_name = &method_ast.sig.ident;
+    let gen_constructor_ident = get_gen_constructor_name(method_name);
+
+    let parsed_args: Vec<(proc_macro2::Ident, proc_macro2::TokenStream)> = method_ast
+        .sig
+        .inputs
+        .iter()
+        .enumerate()
+        .map(|(idx, f)| match f {
+            FnArg::Typed(t) => match t.ty.as_ref() {
+                Type::Path(d) => Some(utils::extract_from_native_type(idx, d)),
+                _ => None,
+            },
+            _ => None,
+        })
+        .flatten()
+        .collect();
+
+    let (arg_idents, arg_parsing): (Vec<_>, Vec<_>) = parsed_args.iter().cloned().unzip();
 
     let tokens = quote! {
         #method_ast
 
-        pub fn #gen_constructor_ident(mut cx: FunctionContext)  -> JsResult<JsUndefined>  {
+        /// Generated constructor.
+        pub fn #gen_constructor_ident(mut cx: neon::prelude::FunctionContext) -> neon::prelude::JsResult<neon::prelude::JsUndefined>  {
+            // Need this in scope for cx.this().set to work
+            use neon::prelude::Object;
 
+            #(#arg_parsing)*
 
+            let res = Self::#method_name(#(#arg_idents,)*).map_err(|e| {
+                cx.throw_type_error::<_, ()>(format!("Failed to construct {}", e))
+                    .unwrap_err()
+            })?;
 
+            let this = cx.boxed(res);
+            cx.this().set(&mut cx, Self::THIS, this)?;
             Ok(cx.undefined())
         }
     };
@@ -66,7 +98,7 @@ pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 /// Adds a `const THIS: &str ...` variable to reference the `this` object.
-/// 1. User can provide their own and not use the macro. As long as there is a THIS const present
+/// 1. <TODO:"User can provide their own"> As long as there is a THIS const present
 /// in the `impl` block the other macros should use that.
 #[proc_macro_attribute]
 pub fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {

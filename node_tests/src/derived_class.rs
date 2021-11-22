@@ -1,5 +1,5 @@
-use neon::prelude::{Context, FunctionContext, JsPromise, JsResult};
-use neon::types::{JsNumber, JsUndefined};
+use neon::prelude::{Context, Finalize, FunctionContext, JsPromise, JsResult};
+use neon::types::JsNumber;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -34,6 +34,8 @@ pub struct TestStruct {
     path_to_exe: PathBuf,
     dll_path_map: HashMap<String, PathBuf>,
 }
+
+impl Finalize for TestStruct {}
 
 #[neon_macros::impl_block]
 impl TestStruct {
