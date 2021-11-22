@@ -12,6 +12,7 @@
     "check:fmt:prettier": "npm run fmt:prettier:impl -- --check",
     "fmt:prettier:impl": "npm run bin:prettier -- \"**/*.{ts,js,md}\"",
     "commit": "cz",
+    "preflight": "npm run check:fmt:prettier && cargo +nightly fmt -- --check && cargo sort --check && cargo clippy --verbose -- -D warnings",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
