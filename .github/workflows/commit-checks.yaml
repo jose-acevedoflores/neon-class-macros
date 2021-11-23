@@ -1,0 +1,25 @@
+name: Commit Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  block-nonconventional-commits:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      # This action can't be combined with other steps. Keep it on its own job.
+      - name: Enforce Conventional Commits
+        uses: wagoid/commitlint-github-action@v4
+
+  block-squash-commits:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Block merging fixup commits
+        uses: 13rac1/block-fixup-merge-action@v2.0.0
