@@ -4,7 +4,8 @@
   "description": "",
   "scripts": {
     "build": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
-    "test": "npm run build && jest"
+    "test": "npm run build && jest",
+    "test:solo": "jest"
   },
   "author": "",
   "license": "MIT",

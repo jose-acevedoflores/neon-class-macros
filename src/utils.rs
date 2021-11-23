@@ -1,7 +1,9 @@
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::quote;
+use std::mem::MaybeUninit;
+use std::ptr::addr_of_mut;
 use syn::spanned::Spanned;
-use syn::TypePath;
+use syn::{ImplItemMethod, Meta, NestedMeta, TypePath};
 
 pub fn extract_from_native_type(arg_idx: usize, arg: &TypePath) -> (Ident, TokenStream) {
     let name = &arg.path.segments.last().unwrap().ident;
@@ -24,4 +26,102 @@ pub fn extract_from_native_type(arg_idx: usize, arg: &TypePath) -> (Ident, Token
     };
 
     (arg_ident, tok)
+}
+
+pub struct NeonMacrosAttrs {
+    pub method: ImplItemMethod,
+    pub main: String,
+    pub args: Vec<String>,
+}
+
+impl NeonMacrosAttrs {
+    pub fn new(method: ImplItemMethod) -> Self {
+        let mut n = NeonMacrosAttrs {
+            method,
+            main: String::new(),
+            args: Vec::new(),
+        };
+
+        n.method.attrs.iter().for_each(|attrs| {
+            if let Some(attribute_pkg) = attrs.path.segments.first() {
+                if attribute_pkg.ident != "neon_macros" {
+                    return;
+                }
+            }
+
+            n.main = format!("{}", attrs.path.segments.last().unwrap().ident);
+
+            let m = attrs.parse_meta().unwrap();
+            match &m {
+                Meta::Path(p) => {
+                    n.args.push(format!("{}", p.segments.last().unwrap().ident));
+                }
+                Meta::List(l) => {
+                    let r = l.nested.first().unwrap();
+                    match r {
+                        NestedMeta::Meta(p) => {
+                            if let Meta::Path(p) = p {
+                                n.args.push(format!("{}", p.segments.last().unwrap().ident));
+                            }
+                        }
+                        NestedMeta::Lit(_) => {}
+                    }
+                }
+                Meta::NameValue(_) => {}
+            }
+        });
+        n
+    }
+
+    pub fn is_constructor_exposed(&self) -> Option<bool> {
+        if self.is_constructor() {
+            Some(self.args.iter().any(|s| s == "expose"))
+        } else {
+            None
+        }
+    }
+
+    pub fn is_constructor(&self) -> bool {
+        &self.main == "constructor"
+    }
+
+    pub fn is_method(&self) -> bool {
+        &self.main == "method"
+    }
+}
+
+pub struct Constructor {
+    pub method: ImplItemMethod,
+    pub exposed: bool,
+}
+
+pub struct ImplTree {
+    pub constructor: Constructor,
+    pub methods: Vec<ImplItemMethod>,
+}
+
+impl ImplTree {
+    pub fn new(methods: Vec<NeonMacrosAttrs>) -> Self {
+        let mut s: MaybeUninit<ImplTree> = MaybeUninit::uninit();
+        let mut v: Vec<ImplItemMethod> = Vec::with_capacity(methods.len() - 1);
+
+        let ptr = s.as_mut_ptr();
+        for method in methods {
+            if method.is_constructor() {
+                unsafe {
+                    addr_of_mut!((*ptr).constructor).write(Constructor {
+                        method: method.method.clone(),
+                        exposed: method.is_constructor_exposed().unwrap_or(false),
+                    });
+                }
+            } else if method.is_method() {
+                v.push(method.method);
+            }
+        }
+
+        unsafe {
+            addr_of_mut!((*ptr).methods).write(v);
+        }
+        unsafe { s.assume_init() }
+    }
 }
