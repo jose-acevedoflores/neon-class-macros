@@ -138,21 +138,23 @@ pub fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
         .collect::<Vec<NeonMacrosAttrs>>();
 
     let impl_tree = ImplTree::new(attrs_for_each_decorated_method);
+    let gen_method_names: Vec<proc_macro2::Ident> = impl_tree
+        .methods
+        .iter()
+        .map(|e| get_gen_method_name(&e.sig.ident))
+        .collect();
+    let js_names: Vec<Literal> = impl_tree
+        .methods
+        .iter()
+        .map(|e| {
+            let js_name = format!("{}", &e.sig.ident).to_mixed_case();
+            Literal::string(&js_name)
+        })
+        .collect();
+
     if impl_tree.constructor.exposed {
         let gen_ctor_name = get_gen_method_name(&impl_tree.constructor.method.sig.ident);
-        let gen_method_names: Vec<proc_macro2::Ident> = impl_tree
-            .methods
-            .iter()
-            .map(|e| get_gen_method_name(&e.sig.ident))
-            .collect();
-        let js_names: Vec<Literal> = impl_tree
-            .methods
-            .iter()
-            .map(|e| {
-                let js_name = format!("{}", &e.sig.ident).to_mixed_case();
-                Literal::string(&js_name)
-            })
-            .collect();
+
         let gen_register_fn = {
             let gen_register_fn = quote! {
                 pub fn __neon_gen_expose_register(cx: &mut neon::prelude::ModuleContext) -> neon::prelude::NeonResult<()> {
@@ -177,6 +179,35 @@ pub fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
         };
         impl_ast.items.push(ImplItem::Method(gen_register_fn));
     }
+
+    let gen_to_js = {
+        let fnct = quote! {
+             pub fn to_js_obj<'a, 'b>(cx: &'b mut impl neon::prelude::Context<'a>, obj: Self) -> neon::prelude::JsResult<'a, neon::prelude::JsObject> {
+                use neon::prelude::Object;
+                let constructor = neon::prelude::JsFunction::new(cx, |mut cx| {
+                    let this = cx.argument::<neon::prelude::JsBox<Self>>(0)?;
+                    cx.this().set(&mut cx, Self::THIS, this)?;
+                    Ok(cx.undefined())
+                })?;
+
+                let prototype = constructor
+                    .get(cx, "prototype")?
+                    .downcast_or_throw::<neon::prelude::JsObject, _>(cx)?;
+
+                #(
+                    let f = neon::prelude::JsFunction::new(cx, Self::#gen_method_names)?;
+                    prototype.set(cx, #js_names, f)?;
+                )*
+
+                let handle = cx.boxed(obj);
+                let c = constructor.construct(cx, [handle])?;
+                Ok(c)
+            }
+        };
+        let fnct: proc_macro::TokenStream = fnct.into();
+        parse_macro_input!(fnct as ImplItemMethod)
+    };
+    impl_ast.items.push(ImplItem::Method(gen_to_js));
 
     let tokens = quote! {
         #impl_ast
