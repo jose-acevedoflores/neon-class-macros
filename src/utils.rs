@@ -69,32 +69,36 @@ pub struct NeonMacrosAttrs {
 
 impl NeonMacrosAttrs {
     pub fn new(method: ImplItemMethod) -> Self {
-        let mut n = NeonMacrosAttrs {
+        let mut parsed_attrs = NeonMacrosAttrs {
             method,
             main: String::new(),
             args: Vec::new(),
         };
 
-        n.method.attrs.iter().for_each(|attrs| {
+        parsed_attrs.method.attrs.iter().for_each(|attrs| {
             if let Some(attribute_pkg) = attrs.path.segments.first() {
                 if attribute_pkg.ident != "neon_macros" {
                     return;
                 }
             }
 
-            n.main = format!("{}", attrs.path.segments.last().unwrap().ident);
+            parsed_attrs.main = format!("{}", attrs.path.segments.last().unwrap().ident);
 
             let m = attrs.parse_meta().unwrap();
             match &m {
-                Meta::Path(p) => {
-                    n.args.push(format!("{}", p.segments.last().unwrap().ident));
+                Meta::Path(path) => {
+                    parsed_attrs
+                        .args
+                        .push(format!("{}", path.segments.last().unwrap().ident));
                 }
-                Meta::List(l) => {
-                    let r = l.nested.first().unwrap();
-                    match r {
-                        NestedMeta::Meta(p) => {
-                            if let Meta::Path(p) = p {
-                                n.args.push(format!("{}", p.segments.last().unwrap().ident));
+                Meta::List(meta_ls) => {
+                    let nested_meta = meta_ls.nested.first().unwrap();
+                    match nested_meta {
+                        NestedMeta::Meta(meta) => {
+                            if let Meta::Path(path) = meta {
+                                parsed_attrs
+                                    .args
+                                    .push(format!("{}", path.segments.last().unwrap().ident));
                             }
                         }
                         NestedMeta::Lit(_) => {}
@@ -103,7 +107,7 @@ impl NeonMacrosAttrs {
                 Meta::NameValue(_) => {}
             }
         });
-        n
+        parsed_attrs
     }
 
     pub fn is_constructor_exposed(&self) -> Option<bool> {
