@@ -1,7 +1,7 @@
+use crate::utils::{ImplTree, NeonMacrosAttrs};
+use heck::MixedCase;
 use proc_macro::TokenStream;
 use proc_macro2::Literal;
-
-use crate::utils::{ImplTree, NeonMacrosAttrs};
 use quote::quote;
 use syn::{
     parse_macro_input, DeriveInput, ImplItem, ImplItemConst, ImplItemMethod, ItemImpl, Type,
@@ -138,9 +138,21 @@ pub fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
         .collect::<Vec<NeonMacrosAttrs>>();
 
     let impl_tree = ImplTree::new(attrs_for_each_decorated_method);
-
     if impl_tree.constructor.exposed {
         let gen_ctor_name = get_gen_method_name(&impl_tree.constructor.method.sig.ident);
+        let gen_method_names: Vec<proc_macro2::Ident> = impl_tree
+            .methods
+            .iter()
+            .map(|e| get_gen_method_name(&e.sig.ident))
+            .collect();
+        let js_names: Vec<Literal> = impl_tree
+            .methods
+            .iter()
+            .map(|e| {
+                let js_name = format!("{}", &e.sig.ident).to_mixed_case();
+                Literal::string(&js_name)
+            })
+            .collect();
         let gen_register_fn = {
             let gen_register_fn = quote! {
                 pub fn __neon_gen_expose_register(cx: &mut neon::prelude::ModuleContext) -> neon::prelude::NeonResult<()> {
@@ -151,6 +163,10 @@ pub fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
                         .get(cx, "prototype")?
                         .downcast_or_throw::<neon::prelude::JsObject, _>(cx)?;
 
+                    #(
+                        let f = neon::prelude::JsFunction::new(cx, Self::#gen_method_names)?;
+                        prototype.set(cx, #js_names, f)?;
+                    )*
 
                     cx.export_value(#struct_name, constructor)?;
                     Ok(())

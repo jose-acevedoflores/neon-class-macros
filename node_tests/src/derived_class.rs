@@ -1,5 +1,5 @@
 use neon::prelude::{Context, Finalize, FunctionContext, JsPromise, JsResult};
-use neon::types::JsNumber;
+use neon::types::{JsNumber, JsString};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -63,6 +63,17 @@ impl TestStruct {
         });
 
         Ok(p)
+    }
+
+    #[neon_macros::method]
+    fn another_one<'ctx>(
+        &self,
+        mut cx: FunctionContext<'ctx>,
+        num: u32,
+        msg: String,
+    ) -> JsResult<'ctx, JsString> {
+        let res = format!("hehe {}-{}-{:?}", msg, num, self.path_to_exe);
+        Ok(cx.string(res))
     }
 }
 
