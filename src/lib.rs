@@ -4,7 +4,7 @@ use proc_macro2::Literal;
 use crate::utils::{ImplTree, NeonMacrosAttrs};
 use quote::quote;
 use syn::{
-    parse_macro_input, DeriveInput, FnArg, ImplItem, ImplItemConst, ImplItemMethod, ItemImpl, Type,
+    parse_macro_input, DeriveInput, ImplItem, ImplItemConst, ImplItemMethod, ItemImpl, Type,
 };
 
 mod utils;
@@ -45,28 +45,13 @@ pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
     let method_name = &method_ast.sig.ident;
     let gen_constructor_ident = get_gen_method_name(method_name);
 
-    let parsed_args: Vec<(proc_macro2::Ident, proc_macro2::TokenStream)> = method_ast
-        .sig
-        .inputs
-        .iter()
-        .enumerate()
-        .map(|(idx, f)| match f {
-            FnArg::Typed(t) => match t.ty.as_ref() {
-                Type::Path(d) => Some(utils::extract_from_native_type(idx, d)),
-                _ => None,
-            },
-            _ => None,
-        })
-        .flatten()
-        .collect();
-
-    let (arg_idents, arg_parsing): (Vec<_>, Vec<_>) = parsed_args.iter().cloned().unzip();
+    let (arg_idents, arg_parsing) = utils::parse_native_args(&method_ast.sig.inputs, false);
 
     let tokens = quote! {
         #method_ast
 
         /// Generated constructor.
-        pub fn #gen_constructor_ident(mut cx: neon::prelude::FunctionContext) -> neon::prelude::JsResult<neon::prelude::JsUndefined>  {
+        pub fn #gen_constructor_ident(mut cx: neon::prelude::FunctionContext) -> neon::prelude::JsResult<neon::prelude::JsUndefined> {
             // Need this in scope for cx.this().set to work
             use neon::prelude::Object;
 
@@ -88,11 +73,28 @@ pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
-    let input = proc_macro2::TokenStream::from(input);
+    let method_ast = parse_macro_input!(input as ImplItemMethod);
+    let method_name = &method_ast.sig.ident;
+    let gen_method_name = get_gen_method_name(method_name);
+    let output = &method_ast.sig.output;
+
+    let (arg_idents, arg_parsing) = utils::parse_native_args(&method_ast.sig.inputs, true);
 
     let tokens = quote! {
-        #input
+        #method_ast
 
+        // TODO DERIVE LIFETIME FROM OUTPUT
+        pub fn #gen_method_name<'ctx>(mut cx: neon::prelude::FunctionContext<'ctx>) #output {
+            use neon::prelude::Object;
+
+            #(#arg_parsing)*
+
+            let this = cx.this();
+            let this = this.get(&mut cx, Self::THIS)?
+                .downcast_or_throw::<neon::prelude::JsBox<Self>, _>(&mut cx)?;
+
+            this.#method_name(cx, #(#arg_idents,)*)
+        }
     };
 
     tokens.into()

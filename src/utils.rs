@@ -2,8 +2,37 @@ use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::quote;
 use std::mem::MaybeUninit;
 use std::ptr::addr_of_mut;
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{ImplItemMethod, Meta, NestedMeta, TypePath};
+use syn::token::Comma;
+use syn::{FnArg, ImplItemMethod, Meta, NestedMeta, Type, TypePath};
+
+pub fn parse_native_args(
+    input_args: &Punctuated<FnArg, Comma>,
+    is_method: bool,
+) -> (Vec<Ident>, Vec<TokenStream>) {
+    let parsed_args: Vec<(Ident, TokenStream)> = input_args
+        .iter()
+        .enumerate()
+        .map(|(idx, f)| match f {
+            FnArg::Typed(t) => match t.ty.as_ref() {
+                Type::Path(d) => {
+                    //TODO Fix this adjusted_idx kludge
+                    if is_method && idx as i64 - 2 < 0 {
+                        return None;
+                    }
+                    let adjusted_idx = if is_method { idx - 2 } else { idx };
+                    Some(extract_from_native_type(adjusted_idx, d))
+                }
+                _ => None,
+            },
+            _ => None,
+        })
+        .flatten()
+        .collect();
+
+    parsed_args.iter().cloned().unzip()
+}
 
 pub fn extract_from_native_type(arg_idx: usize, arg: &TypePath) -> (Ident, TokenStream) {
     let name = &arg.path.segments.last().unwrap().ident;
@@ -14,6 +43,10 @@ pub fn extract_from_native_type(arg_idx: usize, arg: &TypePath) -> (Ident, Token
     let tok = if name == &Ident::new("String", Span::call_site()) {
         quote! {
             let #arg_ident = cx.argument::<neon::prelude::JsString>(#idx_literal)?.value(&mut cx);
+        }
+    } else if name == &Ident::new("u32", Span::call_site()) {
+        quote! {
+            let #arg_ident = cx.argument::<neon::prelude::JsNumber>(#idx_literal)?.value(&mut cx) as #name;
         }
     } else {
         quote! {
