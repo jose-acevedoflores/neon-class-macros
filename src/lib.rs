@@ -6,6 +6,7 @@ use heck::MixedCase;
 use proc_macro::TokenStream;
 use proc_macro2::Literal;
 use quote::quote;
+use std::str::FromStr;
 use syn::{
     parse_macro_input, DeriveInput, ImplItem, ImplItemConst, ImplItemMethod, ItemImpl, Type,
 };
@@ -51,13 +52,19 @@ pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
     let tokens = quote! {
         #method_ast
 
-        /// Generated constructor.
+        /// Generated constructor for the JS side.
+        ///
+        /// This method is what will be called when the JS side performs a `new` like:
+        /// ```js
+        /// const jsObj = new RustExportedValue();
+        /// ```
         pub fn #gen_constructor_ident(mut cx: neon::prelude::FunctionContext) -> neon::prelude::JsResult<neon::prelude::JsUndefined> {
             // Need this in scope for cx.this().set to work
             use neon::prelude::Object;
 
             #(#arg_parsing)*
 
+            // Call original method decorated as constructor
             let res = Self::#method_name(#(#arg_idents,)*).map_err(|e| {
                 cx.throw_type_error::<_, ()>(format!("Failed to construct {}", e))
                     .unwrap_err()
@@ -79,12 +86,20 @@ pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
     let gen_method_name = get_gen_method_name(method_name);
     let output = &method_ast.sig.output;
 
+    let gen_doc = proc_macro2::TokenStream::from_str(&format!(
+        "/// Generated method for [`{0}`](#method.{0})",
+        method_name
+    ))
+    .unwrap();
+
     let (arg_idents, arg_parsing) = utils::parse_native_args(&method_ast.sig.inputs, true);
 
     let tokens = quote! {
         #method_ast
 
-        // TODO DERIVE LIFETIME FROM OUTPUT
+        /// **TODO DERIVE LIFETIME FROM OUTPUT**
+        ///
+        #gen_doc
         pub fn #gen_method_name<'ctx>(mut cx: neon::prelude::FunctionContext<'ctx>) #output {
             use neon::prelude::Object;
 

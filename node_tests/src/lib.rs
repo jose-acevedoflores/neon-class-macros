@@ -1,3 +1,8 @@
+//!
+//! Run the following command to show docs:
+//! ```
+//! cargo doc --lib  --document-private-items --open
+//! ```
 use crate::derived_class::test;
 use neon::prelude::{ModuleContext, NeonResult};
 
