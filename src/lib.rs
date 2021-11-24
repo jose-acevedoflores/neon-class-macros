@@ -40,9 +40,6 @@ pub(crate) fn get_gen_method_name(orig_name: &proc_macro2::Ident) -> proc_macro2
 }
 
 /// Generates a constructor for the JS side based on the annotated method.
-/// ## Attribute Args:
-/// * `expose` - expose this constructor to the JS side.
-/// TODO ELIMINATE THE EXPOSE flag, if a method is decorated as constructor then just generate, user can choose to register or not.
 #[proc_macro_attribute]
 pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
     let method_ast = parse_macro_input!(input as ImplItemMethod);
@@ -159,56 +156,53 @@ pub fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
         })
         .collect();
 
-    if impl_tree.constructor.exposed {
-        let gen_ctor_name = get_gen_method_name(&impl_tree.constructor.method.sig.ident);
+    let prototype_setup_tok = quote! {
+        use neon::prelude::Object;
 
-        let gen_register_fn = {
-            let gen_register_fn = quote! {
+        let prototype = constructor
+            .get(cx, "prototype")?
+            .downcast_or_throw::<neon::prelude::JsObject, _>(cx)?;
+
+        #(
+            let f = neon::prelude::JsFunction::new(cx, Self::#gen_method_names)?;
+            prototype.set(cx, #js_names, f)?;
+        )*
+    };
+
+    if let Some(constructor) = &impl_tree.constructor {
+        let gen_ctor_name = get_gen_method_name(&constructor.sig.ident);
+
+        let register_fn = {
+            let fnct = quote! {
                 /// Expose the constructor for this object to the JS side.
                 pub fn register_constructor(cx: &mut neon::prelude::ModuleContext) -> neon::prelude::NeonResult<()> {
-                    use neon::prelude::Object;
                     let constructor = neon::prelude::JsFunction::new(cx, Self::#gen_ctor_name)?;
 
-                    let prototype = constructor
-                        .get(cx, "prototype")?
-                        .downcast_or_throw::<neon::prelude::JsObject, _>(cx)?;
-
-                    #(
-                        let f = neon::prelude::JsFunction::new(cx, Self::#gen_method_names)?;
-                        prototype.set(cx, #js_names, f)?;
-                    )*
+                    #prototype_setup_tok
 
                     cx.export_value(#struct_name, constructor)?;
                     Ok(())
                 }
             };
-            let gen_register_fn: proc_macro::TokenStream = gen_register_fn.into();
-            parse_macro_input!(gen_register_fn as ImplItemMethod)
+            let fnct: proc_macro::TokenStream = fnct.into();
+            parse_macro_input!(fnct as ImplItemMethod)
         };
-        impl_ast.items.push(ImplItem::Method(gen_register_fn));
+        impl_ast.items.push(ImplItem::Method(register_fn));
     }
 
-    let gen_to_js = {
+    let to_js_obj_fn = {
         let fnct = quote! {
             /// Turn an object of `Self` into a JS object.
             ///
             /// See example usage in [impl_block](macro@neon_macros::impl_block#to_js_obj).
             pub fn to_js_obj<'a, 'b>(cx: &'b mut impl neon::prelude::Context<'a>, obj: Self) -> neon::prelude::JsResult<'a, neon::prelude::JsObject> {
-                use neon::prelude::Object;
                 let constructor = neon::prelude::JsFunction::new(cx, |mut cx| {
                     let this = cx.argument::<neon::prelude::JsBox<Self>>(0)?;
                     cx.this().set(&mut cx, Self::THIS, this)?;
                     Ok(cx.undefined())
                 })?;
 
-                let prototype = constructor
-                    .get(cx, "prototype")?
-                    .downcast_or_throw::<neon::prelude::JsObject, _>(cx)?;
-
-                #(
-                    let f = neon::prelude::JsFunction::new(cx, Self::#gen_method_names)?;
-                    prototype.set(cx, #js_names, f)?;
-                )*
+                #prototype_setup_tok
 
                 let handle = cx.boxed(obj);
                 let c = constructor.construct(cx, [handle])?;
@@ -218,7 +212,7 @@ pub fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
         let fnct: proc_macro::TokenStream = fnct.into();
         parse_macro_input!(fnct as ImplItemMethod)
     };
-    impl_ast.items.push(ImplItem::Method(gen_to_js));
+    impl_ast.items.push(ImplItem::Method(to_js_obj_fn));
 
     let tokens = quote! {
         #impl_ast

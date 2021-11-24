@@ -14,13 +14,6 @@ impl Finalize for Dummy {}
 
 #[neon_macros::impl_block]
 impl Dummy {
-    #[neon_macros::constructor(expose)]
-    pub fn constructor(arg: String) -> Result<Self, String> {
-        Ok(Self {
-            field: arg
-        })
-    }
-
     pub fn new(arg: String) -> Self {
         Self {
             field: arg

@@ -1,7 +1,5 @@
 use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::quote;
-use std::mem::MaybeUninit;
-use std::ptr::addr_of_mut;
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::token::Comma;
@@ -64,6 +62,10 @@ pub fn extract_from_native_type(arg_idx: usize, arg: &TypePath) -> (Ident, Token
 pub struct NeonMacrosAttrs {
     pub method: ImplItemMethod,
     pub main: String,
+    /// List of args given to the macro
+    ///
+    /// For example, given `#[neon_macros::method(arg1, arg2)]` this `args` field would be:
+    /// `["arg1", "arg2"]`
     pub args: Vec<String>,
 }
 
@@ -110,14 +112,6 @@ impl NeonMacrosAttrs {
         parsed_attrs
     }
 
-    pub fn is_constructor_exposed(&self) -> Option<bool> {
-        if self.is_constructor() {
-            Some(self.args.iter().any(|s| s == "expose"))
-        } else {
-            None
-        }
-    }
-
     pub fn is_constructor(&self) -> bool {
         &self.main == "constructor"
     }
@@ -127,38 +121,26 @@ impl NeonMacrosAttrs {
     }
 }
 
-pub struct Constructor {
-    pub method: ImplItemMethod,
-    pub exposed: bool,
-}
-
 pub struct ImplTree {
-    pub constructor: Constructor,
+    pub constructor: Option<ImplItemMethod>,
     pub methods: Vec<ImplItemMethod>,
 }
 
 impl ImplTree {
     pub fn new(methods: Vec<NeonMacrosAttrs>) -> Self {
-        let mut s: MaybeUninit<ImplTree> = MaybeUninit::uninit();
-        let mut v: Vec<ImplItemMethod> = Vec::with_capacity(methods.len() - 1);
+        let mut s = ImplTree {
+            constructor: None,
+            methods: Vec::with_capacity(methods.len() - 1),
+        };
 
-        let ptr = s.as_mut_ptr();
         for method in methods {
             if method.is_constructor() {
-                unsafe {
-                    addr_of_mut!((*ptr).constructor).write(Constructor {
-                        method: method.method.clone(),
-                        exposed: method.is_constructor_exposed().unwrap_or(false),
-                    });
-                }
+                s.constructor = Some(method.method.clone());
             } else if method.is_method() {
-                v.push(method.method);
+                s.methods.push(method.method);
             }
         }
 
-        unsafe {
-            addr_of_mut!((*ptr).methods).write(v);
-        }
-        unsafe { s.assume_init() }
+        s
     }
 }

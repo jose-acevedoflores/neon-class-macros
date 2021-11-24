@@ -39,7 +39,7 @@ impl Finalize for TestStruct {}
 
 #[neon_macros::impl_block]
 impl TestStruct {
-    #[neon_macros::constructor(expose)]
+    #[neon_macros::constructor]
     pub fn constructor(path_to_exe: String, dll_path_map: DllMap) -> Result<Self, String> {
         let dll_path_map = dll_path_map.try_into()?;
 
