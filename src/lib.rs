@@ -157,7 +157,7 @@ pub fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
 
         let gen_register_fn = {
             let gen_register_fn = quote! {
-                pub fn __neon_gen_expose_register(cx: &mut neon::prelude::ModuleContext) -> neon::prelude::NeonResult<()> {
+                pub fn register_constructor(cx: &mut neon::prelude::ModuleContext) -> neon::prelude::NeonResult<()> {
                     use neon::prelude::Object;
                     let constructor = neon::prelude::JsFunction::new(cx, Self::#gen_ctor_name)?;
 
@@ -182,7 +182,7 @@ pub fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
 
     let gen_to_js = {
         let fnct = quote! {
-             pub fn to_js_obj<'a, 'b>(cx: &'b mut impl neon::prelude::Context<'a>, obj: Self) -> neon::prelude::JsResult<'a, neon::prelude::JsObject> {
+            pub fn to_js_obj<'a, 'b>(cx: &'b mut impl neon::prelude::Context<'a>, obj: Self) -> neon::prelude::JsResult<'a, neon::prelude::JsObject> {
                 use neon::prelude::Object;
                 let constructor = neon::prelude::JsFunction::new(cx, |mut cx| {
                     let this = cx.argument::<neon::prelude::JsBox<Self>>(0)?;

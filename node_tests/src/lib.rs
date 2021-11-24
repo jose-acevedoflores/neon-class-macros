@@ -7,5 +7,6 @@ mod derived_class;
 fn node_entrypoint(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("test", test)?;
 
+    derived_class::TestStruct::register_constructor(&mut cx)?;
     Ok(())
 }

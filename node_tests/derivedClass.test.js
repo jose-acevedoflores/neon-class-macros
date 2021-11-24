@@ -1,6 +1,6 @@
 const mod = require("./index.node");
 
-it.skip("basic constructor", () => {
+it("basic constructor", () => {
   const obj = new mod.TestStruct("some_path", {
     map: [{ k: "LE_KEY", v: "Le_VAL" }],
   });
