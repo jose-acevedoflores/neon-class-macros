@@ -81,6 +81,13 @@ fn extract_from_native_input_type(arg_idx: usize, arg: &TypePath) -> (Ident, Tok
 
 type NativeResultParser = Option<fn(&Ident) -> proc_macro2::TokenStream>;
 
+/// This functions is in charge of determining if the return type provided by a decorated method:
+/// * Can be used as is, meaning the decorated method already returns a valid [`JsResult`](neon::prelude::JsResult)
+/// * Needs to be converted. This applies to methods that return plain types like:
+///    * [`String`]: which needs to be converted to a [`JsResult`](neon::prelude::JsResult)
+///    * [`u32`]: which needs to be converted to a [`JsNumber`](neon::prelude::JsNumber)
+///    * [`unit`]: which needs to be converted to [`JsUndefined`](neon::prelude::JsUndefined)
+///    * etc ...
 ///
 pub fn parse_return_type(output: &ReturnType) -> (proc_macro2::TokenStream, NativeResultParser) {
     match &output {
