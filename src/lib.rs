@@ -66,6 +66,10 @@ pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
+/// Macro that decorates the methods that should be included in the JS prototype.
+///
+#[doc = include_str!("../docs/method_macro.md")]
+///
 #[proc_macro_attribute]
 pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
     let method_ast = parse_macro_input!(input as ImplItemMethod);
@@ -74,7 +78,7 @@ pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
     let output = &method_ast.sig.output;
 
     let gen_doc = proc_macro2::TokenStream::from_str(&format!(
-        "/// Generated method for [`{0}`](#method.{0})",
+        "/// Generated method for [`{0}`](#method.{0}). See [`method`](neon_macros::method) macro for details.",
         method_name
     ))
     .unwrap();
