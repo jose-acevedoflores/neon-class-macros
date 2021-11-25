@@ -1,5 +1,28 @@
 //!
+//! This crate aims to simplify some of the interactions with the [`neon`] api when it comes to
+//! dealing with mirroring rust structs as JS classes.
 //!
+//! ## Example
+//!
+//! This example focuses on exporting a `TestStruct` as a JS class.
+//!
+//! #### Rust side
+//!
+//! ```rust
+#![doc = include_str!("../node_tests/src/derived_class.rs")]
+//! ```
+//!
+//! To register the struct as a class check the following example:
+//!
+//! ```ignore
+#![doc = include_str!("../node_tests/src/lib.rs")]
+//! ```
+//!
+//! #### JavaScript Side
+//!
+//! ```javascript
+#![doc = include_str!("../node_tests/derivedClass.test.js")]
+//! ```
 //!
 use crate::utils::{ImplTree, NeonMacrosAttrs};
 use heck::MixedCase;

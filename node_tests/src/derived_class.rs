@@ -99,3 +99,4 @@ fn main() {}
 pub(crate) fn test(mut cx: FunctionContext) -> JsResult<JsNumber> {
     Ok(cx.number(4))
 }
+// Hack so this file can be included in the src/lib.rs Examples section.

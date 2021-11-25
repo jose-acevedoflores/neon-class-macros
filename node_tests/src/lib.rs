@@ -1,8 +1,3 @@
-//!
-//! Run the following command to show docs:
-//! ```
-//! cargo doc --lib  --document-private-items --open
-//! ```
 use crate::derived_class::test;
 use neon::prelude::{ModuleContext, NeonResult};
 
@@ -15,3 +10,4 @@ fn node_entrypoint(mut cx: ModuleContext) -> NeonResult<()> {
     derived_class::TestStruct::register_constructor(&mut cx)?;
     Ok(())
 }
+// Hack so this file can be included in the src/lib.rs Examples section.
