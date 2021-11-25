@@ -75,6 +75,17 @@ impl TestStruct {
         let res = format!("hehe {}-{}-{:?}", msg, num, self.path_to_exe);
         Ok(cx.string(res))
     }
+
+    #[neon_macros::method]
+    fn plain_method(&self, num: f64) -> String {
+        let p = self.dll_path_map.get("LE_KEY");
+        format!(
+            "to-str-{}-{}",
+            num,
+            p.map(|p| p.to_str().unwrap().to_string())
+                .unwrap_or("NONE".to_string())
+        )
+    }
 }
 
 #[allow(unused)]

@@ -1,50 +1,70 @@
-use proc_macro2::{Ident, Literal, Span, TokenStream};
+use proc_macro2::{Ident, Literal, TokenStream};
 use quote::quote;
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::token::Comma;
-use syn::{FnArg, ImplItemMethod, Meta, NestedMeta, Type, TypePath};
+use syn::{FnArg, ImplItemMethod, Meta, NestedMeta, ReturnType, Type, TypePath};
+
+// enum NativeInputTypes {
+//
+// }
+
+pub type ContextIsArg = bool;
 
 pub fn parse_native_args(
     input_args: &Punctuated<FnArg, Comma>,
-    is_method: bool,
-) -> (Vec<Ident>, Vec<TokenStream>) {
+) -> ((Vec<Ident>, Vec<TokenStream>), ContextIsArg) {
+    // while parsing all the args we might encounter `self` and a `FunctionContext`. In those
+    // cases we need to subtract that from the arg index in order to find the correct arg on the js side.
+    // Example:
+    //   For a function with the following signature
+    //      fn start_camel<'ctx>(&self, mut cx: FunctionContext<'ctx>, num: u32) -> BLAH....
+    //   `num` is really `idx` = 2 but with the `idx_adjuster` that becomes idx 0 so
+    //   we can do `cx.argument.get(idx - idx_adjuster)`
+    let mut idx_adjuster = 0;
+    let mut context_is_arg = false;
     let parsed_args: Vec<(Ident, TokenStream)> = input_args
         .iter()
         .enumerate()
         .map(|(idx, f)| match f {
             FnArg::Typed(t) => match t.ty.as_ref() {
                 Type::Path(d) => {
-                    //TODO Fix this adjusted_idx kludge
-                    if is_method && idx as i64 - 2 < 0 {
+                    let arg_type = &d.path.segments.last().unwrap().ident;
+                    if arg_type == "FunctionContext" {
+                        // FunctionContext as second arg so skip this one
+                        idx_adjuster += 1;
+                        context_is_arg = true;
                         return None;
                     }
-                    let adjusted_idx = if is_method { idx - 2 } else { idx };
-                    Some(extract_from_native_type(adjusted_idx, d))
+                    Some(extract_from_native_input_type(idx - idx_adjuster, d))
                 }
                 _ => None,
             },
-            _ => None,
+            FnArg::Receiver(_) => {
+                // self parameter, skip one in adjusted idx
+                idx_adjuster += 1;
+                None
+            }
         })
         .flatten()
         .collect();
 
-    parsed_args.iter().cloned().unzip()
+    (parsed_args.iter().cloned().unzip(), context_is_arg)
 }
 
-pub fn extract_from_native_type(arg_idx: usize, arg: &TypePath) -> (Ident, TokenStream) {
-    let name = &arg.path.segments.last().unwrap().ident;
+fn extract_from_native_input_type(arg_idx: usize, arg: &TypePath) -> (Ident, TokenStream) {
+    let arg_type = &arg.path.segments.last().unwrap().ident;
 
-    let arg_name = format!("arg{}", arg_idx);
+    let arg_name = format!("arg_{}", arg_idx);
     let arg_ident = Ident::new(&arg_name, arg.span());
     let idx_literal = Literal::i32_unsuffixed(arg_idx as i32);
-    let tok = if name == &Ident::new("String", Span::call_site()) {
+    let tok = if arg_type == "String" {
         quote! {
             let #arg_ident = cx.argument::<neon::prelude::JsString>(#idx_literal)?.value(&mut cx);
         }
-    } else if name == &Ident::new("u32", Span::call_site()) {
+    } else if arg_type == "u32" || arg_type == "f64" {
         quote! {
-            let #arg_ident = cx.argument::<neon::prelude::JsNumber>(#idx_literal)?.value(&mut cx) as #name;
+            let #arg_ident = cx.argument::<neon::prelude::JsNumber>(#idx_literal)?.value(&mut cx) as #arg_type;
         }
     } else {
         quote! {
@@ -57,6 +77,35 @@ pub fn extract_from_native_type(arg_idx: usize, arg: &TypePath) -> (Ident, Token
     };
 
     (arg_ident, tok)
+}
+
+type NativeResultParser = Option<fn(&Ident) -> proc_macro2::TokenStream>;
+
+pub fn parse_return_type(output: &ReturnType) -> (proc_macro2::TokenStream, NativeResultParser) {
+    if let ReturnType::Type(_, ty) = &output {
+        if let Type::Path(path) = ty.as_ref() {
+            let native_method_return_type = &path.path.segments.last().unwrap().ident;
+            if native_method_return_type == "String" {
+                let tok = quote! {
+                    -> neon::prelude::JsResult<neon::prelude::JsString>
+                };
+
+                return (
+                    tok,
+                    Some(|ident| {
+                        quote! {
+                            Ok(cx.string(#ident))
+                        }
+                    }),
+                );
+            }
+        }
+    }
+
+    let tok = quote! {
+        #output
+    };
+    (tok, None)
 }
 
 pub struct NeonMacrosAttrs {

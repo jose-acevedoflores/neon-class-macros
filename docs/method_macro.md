@@ -38,6 +38,23 @@ fn a_method<'ctx>(
 - Takes only regular items that can be extracted with supported neon types.
   Return type must be convertible to a [`JsResult`](neon::prelude::JsResult)
 
-```ignorelang
-TODO
+```rust
+# use neon::prelude::{FunctionContext, Finalize, Context, JsResult, JsNumber};
+# #[derive(neon_macros::Class)]
+# struct Dummy {
+#    field: String,
+# }
+# impl Finalize for Dummy {}
+# #[neon_macros::impl_block]
+# impl Dummy {
+#    pub fn new(arg: String) -> Self {
+#        Self {
+#            field: arg
+#        }
+#    }
+#[neon_macros::method]
+fn plain_method(&self, num: f64) -> String {
+  format!("to-str-{}", num)
+}
+# }
 ```

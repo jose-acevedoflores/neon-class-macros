@@ -5,7 +5,7 @@ use crate::utils::{ImplTree, NeonMacrosAttrs};
 use heck::MixedCase;
 use proc_macro::TokenStream;
 use proc_macro2::Literal;
-use quote::quote;
+use quote::{format_ident, quote};
 use std::str::FromStr;
 use syn::{
     parse_macro_input, DeriveInput, ImplItem, ImplItemConst, ImplItemMethod, ItemImpl, Type,
@@ -34,7 +34,7 @@ pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
     let method_name = &method_ast.sig.ident;
     let gen_constructor_ident = get_gen_method_name(method_name);
 
-    let (arg_idents, arg_parsing) = utils::parse_native_args(&method_ast.sig.inputs, false);
+    let ((arg_idents, arg_parsing), _) = utils::parse_native_args(&method_ast.sig.inputs);
 
     let tokens = quote! {
         #method_ast
@@ -83,7 +83,31 @@ pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
     ))
     .unwrap();
 
-    let (arg_idents, arg_parsing) = utils::parse_native_args(&method_ast.sig.inputs, true);
+    let ((arg_idents, arg_parsing), context_is_arg) =
+        utils::parse_native_args(&method_ast.sig.inputs);
+
+    let (output, native_method_result_parser) = utils::parse_return_type(output);
+
+    let native_method_call = if context_is_arg {
+        quote! {
+            this.#method_name(cx, #(#arg_idents,)*)
+        }
+    } else {
+        quote! {
+            this.#method_name(#(#arg_idents,)*)
+        }
+    };
+
+    let return_call = if let Some(fnct) = native_method_result_parser {
+        let result_ident = format_ident!("res");
+        let real_result = fnct(&result_ident);
+        quote! {
+            let #result_ident = #native_method_call;
+            #real_result
+        }
+    } else {
+        native_method_call
+    };
 
     let tokens = quote! {
         #method_ast
@@ -100,7 +124,7 @@ pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
             let this = this.get(&mut cx, Self::THIS)?
                 .downcast_or_throw::<neon::prelude::JsBox<Self>, _>(&mut cx)?;
 
-            this.#method_name(cx, #(#arg_idents,)*)
+            #return_call
         }
     };
 

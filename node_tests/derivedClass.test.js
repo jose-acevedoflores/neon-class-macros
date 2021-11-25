@@ -1,13 +1,29 @@
 const mod = require("./index.node");
 
+const p = "some_path";
+const val = "Le_VAL";
+const map = {
+  map: [{ k: "LE_KEY", v: val }],
+};
+
 it("basic constructor", () => {
-  const p = "some_path";
-  const obj = new mod.TestStruct(p, {
-    map: [{ k: "LE_KEY", v: "Le_VAL" }],
-  });
+  const obj = new mod.TestStruct(p, map);
   expect(obj).toBeDefined();
-  const result = obj.anotherOne(21, "from-js");
-  expect(result).toEqual(`hehe from-js-21-"${p}"`);
+});
+
+describe("Calling generated methods", () => {
+  const obj = new mod.TestStruct(p, map);
+
+  it("calls method that had cx as second arg", () => {
+    const result = obj.anotherOne(21, "from-js");
+    expect(result).toEqual(`hehe from-js-21-"${p}"`);
+  });
+
+  it("calls method that didn't have cx as second arg", () => {
+    const arg = 37.12;
+    const res = obj.plainMethod(arg);
+    expect(res).toBe(`to-str-${arg}-${val}`);
+  });
 });
 
 it("runs", () => {
