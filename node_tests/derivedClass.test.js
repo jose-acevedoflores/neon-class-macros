@@ -30,6 +30,9 @@ describe("Calling generated methods", () => {
   });
 });
 
-it("runs", () => {
-  expect(mod.test()).toBe(4);
+it("check to_js_obj", async () => {
+  const ts = await mod.test();
+  const arg = 12.8;
+  const res = ts.plainMethod(arg);
+  expect(res).toBe(`to-str-${arg}-NONE`);
 });

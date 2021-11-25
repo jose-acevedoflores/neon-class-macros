@@ -1,5 +1,5 @@
 use neon::prelude::{Context, Finalize, FunctionContext, JsPromise, JsResult};
-use neon::types::{JsNumber, JsString};
+use neon::types::JsString;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -96,7 +96,17 @@ impl TestStruct {
 #[allow(unused)]
 fn main() {}
 
-pub(crate) fn test(mut cx: FunctionContext) -> JsResult<JsNumber> {
-    Ok(cx.number(4))
+pub(crate) fn test(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let chan = cx.channel();
+    let (def, p) = cx.promise();
+
+    std::thread::spawn(move || {
+        let m = DllMap { map: Vec::new() };
+        let ts = TestStruct::constructor("random_path".into(), m).unwrap();
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        chan.settle_with(def, move |cx| TestStruct::to_js_obj(cx, ts));
+    });
+
+    Ok(p)
 }
 // Hack so this file can be included in the src/lib.rs Examples section.
