@@ -24,6 +24,10 @@ describe("Calling generated methods", () => {
     const res = obj.plainMethod(arg);
     expect(res).toBe(`to-str-${arg}-${val}`);
   });
+
+  it("calls method that didn't have cx as second arg and returns nothing", () => {
+    expect(obj.methodThatReturnsNothing()).toBeUndefined();
+  });
 });
 
 it("runs", () => {

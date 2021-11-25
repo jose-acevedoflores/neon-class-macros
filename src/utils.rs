@@ -81,23 +81,39 @@ fn extract_from_native_input_type(arg_idx: usize, arg: &TypePath) -> (Ident, Tok
 
 type NativeResultParser = Option<fn(&Ident) -> proc_macro2::TokenStream>;
 
+///
 pub fn parse_return_type(output: &ReturnType) -> (proc_macro2::TokenStream, NativeResultParser) {
-    if let ReturnType::Type(_, ty) = &output {
-        if let Type::Path(path) = ty.as_ref() {
-            let native_method_return_type = &path.path.segments.last().unwrap().ident;
-            if native_method_return_type == "String" {
-                let tok = quote! {
-                    -> neon::prelude::JsResult<neon::prelude::JsString>
-                };
+    match &output {
+        ReturnType::Default => {
+            let tok = quote! {
+                -> neon::prelude::JsResult<neon::prelude::JsUndefined>
+            };
+            return (
+                tok,
+                Some(|_ident| {
+                    quote! {
+                        Ok(cx.undefined())
+                    }
+                }),
+            );
+        }
+        ReturnType::Type(_, ty) => {
+            if let Type::Path(path) = ty.as_ref() {
+                let native_method_return_type = &path.path.segments.last().unwrap().ident;
+                if native_method_return_type == "String" {
+                    let tok = quote! {
+                        -> neon::prelude::JsResult<neon::prelude::JsString>
+                    };
 
-                return (
-                    tok,
-                    Some(|ident| {
-                        quote! {
-                            Ok(cx.string(#ident))
-                        }
-                    }),
-                );
+                    return (
+                        tok,
+                        Some(|ident| {
+                            quote! {
+                                Ok(cx.string(#ident))
+                            }
+                        }),
+                    );
+                }
             }
         }
     }

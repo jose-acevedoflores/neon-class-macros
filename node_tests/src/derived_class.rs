@@ -86,6 +86,11 @@ impl TestStruct {
                 .unwrap_or("NONE".to_string())
         )
     }
+
+    #[neon_macros::method]
+    fn method_that_returns_nothing(&self) {
+        println!("do something {:?}", self.path_to_exe);
+    }
 }
 
 #[allow(unused)]
