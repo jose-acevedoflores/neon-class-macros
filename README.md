@@ -8,8 +8,6 @@
 1. npm install
 2. npm run build:node_tests
 
-Run:
+## Running the tests
 
-```shell
- cargo expand --test basic
-```
+1. `cargo test --features -for-tests` or use the alias `cargo t`

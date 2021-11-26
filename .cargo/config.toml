@@ -1,2 +1,5 @@
+[alias]
+t = ["test", "--features", "for-tests"]
+
 [build]
 rustdocflags = ["--document-private-items"]

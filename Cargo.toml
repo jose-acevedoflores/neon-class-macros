@@ -5,6 +5,7 @@ description = "Macros for convenieniently expressing JS Classes with Neon apis"
 keywords = ["template", "proc_macro", "procmacro", "Neon", "N-API", "nodejs"]
 edition = "2021"
 license = "MIT"
+resolver = "2"
 
 [lib]
 proc-macro = true
@@ -20,10 +21,11 @@ syn = { version = "1.0", features = ["full"] }
 [dependencies.neon]
 version = "0.10.0-alpha.2"
 default-features = false
-features = ["napi-6", "channel-api", "promise-api"]
+features = ["napi-6"]
 
-[dev-dependencies]
-trybuild = "1.0"
+[features]
+# NOTE: the channel and promise api features are only needed when compiling the tests so enable them when running the tests
+for-tests = ["neon/channel-api", "neon/promise-api"]
 
 [workspace]
 members = [

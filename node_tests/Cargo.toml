@@ -15,3 +15,6 @@ serde = { version = "1.0", features = ["derive"] }
 version = "0.10.0-alpha.2"
 default-features = false
 features = ["napi-6", "channel-api", "promise-api"]
+
+[dev-dependencies]
+trybuild = "1.0"
