@@ -71,6 +71,8 @@ pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
         pub fn #gen_constructor_ident(mut cx: neon::prelude::FunctionContext) -> neon::prelude::JsResult<neon::prelude::JsUndefined> {
             // Need this in scope for cx.this().set to work
             use neon::prelude::Object;
+            // required by the expansion of `arg_parsing`
+            use neon_serde::errors::MapErrIntoThrow;
 
             #(#arg_parsing)*
 
@@ -140,6 +142,8 @@ pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
         #gen_doc
         pub fn #gen_method_name<'ctx>(mut cx: neon::prelude::FunctionContext<'ctx>) #output {
             use neon::prelude::Object;
+            // required by the expansion of `arg_parsing`
+            use neon_serde::errors::MapErrIntoThrow;
 
             #(#arg_parsing)*
 

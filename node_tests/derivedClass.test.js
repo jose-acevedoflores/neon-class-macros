@@ -28,6 +28,10 @@ describe("Calling generated methods", () => {
   it("calls method that didn't have cx as second arg and returns nothing", () => {
     expect(obj.methodThatReturnsNothing()).toBeUndefined();
   });
+
+  it("Check numeric values", () => {
+    expect(obj.takeNumeric(123, -3123)).toBe(-3000);
+  });
 });
 
 it("check to_js_obj", async () => {

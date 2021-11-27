@@ -6,9 +6,9 @@ use syn::spanned::Spanned;
 use syn::token::Comma;
 use syn::{FnArg, ImplItemMethod, Meta, NestedMeta, ReturnType, Type, TypePath};
 
-// enum NativeInputTypes {
-//
-// }
+fn is_native_numeric(arg_type: &Ident) -> bool {
+    arg_type == "u32" || arg_type == "f64" || arg_type == "i32"
+}
 
 pub type ContextIsArg = bool;
 
@@ -59,21 +59,14 @@ fn extract_from_native_input_type(arg_idx: usize, arg: &TypePath) -> (Ident, Tok
     let arg_name = format!("arg_{}", arg_idx);
     let arg_ident = Ident::new(&arg_name, arg.span());
     let idx_literal = Literal::i32_unsuffixed(arg_idx as i32);
-    let tok = if arg_type == "String" {
-        quote! {
-            let #arg_ident = cx.argument::<neon::prelude::JsString>(#idx_literal)?.value(&mut cx);
-        }
-    } else if arg_type == "u32" || arg_type == "f64" {
+    let tok = if is_native_numeric(arg_type) {
         quote! {
             let #arg_ident = cx.argument::<neon::prelude::JsNumber>(#idx_literal)?.value(&mut cx) as #arg_type;
         }
     } else {
         quote! {
             let #arg_ident = cx.argument::<neon::prelude::JsValue>(#idx_literal)?;
-            let #arg_ident = neon_serde::from_value(&mut cx, #arg_ident).map_err(|e| {
-                cx.throw_type_error::<_, ()>(format!("Failed deserialization. {}", e))
-                .unwrap_err()
-            })?;
+            let #arg_ident = neon_serde::from_value(&mut cx, #arg_ident).map_err_into_throw(&mut cx)?;
         }
     };
 
@@ -88,8 +81,8 @@ type NativeResultParser = Option<fn(&Ident) -> proc_macro2::TokenStream>;
 /// Specifically it checks if the return type:
 /// * Can be used as is, meaning the decorated method already returns a valid [`JsResult`](neon::prelude::JsResult)
 /// * Needs to be converted. This applies to methods that return plain types like:
-///    * [`String`]: which needs to be converted to a [`JsResult`](neon::prelude::JsResult)
-///    * [`u32`]: which needs to be converted to a [`JsNumber`](neon::prelude::JsNumber)
+///    * [`String`]: which needs to be converted to a [`JsValue`](neon::prelude::JsValue)
+///    * [`u32`]: which needs to be converted to a [`JsValue`](neon::prelude::JsValue)
 ///    * [`unit`]: which needs to be converted to [`JsUndefined`](neon::prelude::JsUndefined)
 ///    * etc ...
 ///
@@ -111,16 +104,17 @@ pub fn parse_return_type(output: &ReturnType) -> (proc_macro2::TokenStream, Nati
         ReturnType::Type(_, ty) => {
             if let Type::Path(path) = ty.as_ref() {
                 let native_method_return_type = &path.path.segments.last().unwrap().ident;
-                if native_method_return_type == "String" {
-                    let tok = quote! {
-                        -> neon::prelude::JsResult<neon::prelude::JsString>
+                if native_method_return_type != "JsResult" {
+                    let return_tok = quote! {
+                        -> neon::prelude::JsResult<'ctx, neon::prelude::JsValue>
                     };
 
                     return (
-                        tok,
+                        return_tok,
                         Some(|ident| {
                             quote! {
-                                Ok(cx.string(#ident))
+                                let #ident = neon_serde::to_value(&mut cx, &#ident).map_err_into_throw(&mut cx)?;
+                                Ok(#ident)
                             }
                         }),
                     );

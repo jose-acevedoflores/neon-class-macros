@@ -1,6 +1,7 @@
 use neon::prelude::{Context, Finalize, FunctionContext, JsPromise, JsResult};
 use neon::types::JsString;
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -33,6 +34,7 @@ impl TryFrom<DllMap> for HashMap<String, PathBuf> {
 pub struct TestStruct {
     path_to_exe: PathBuf,
     dll_path_map: HashMap<String, PathBuf>,
+    my_val: RefCell<i32>,
 }
 
 impl Finalize for TestStruct {}
@@ -46,6 +48,7 @@ impl TestStruct {
         Ok(Self {
             path_to_exe: path_to_exe.into(),
             dll_path_map,
+            my_val: RefCell::new(0),
         })
     }
 
@@ -90,6 +93,12 @@ impl TestStruct {
     #[neon_macros::method]
     fn method_that_returns_nothing(&self) {
         println!("do something {:?}", self.path_to_exe);
+    }
+
+    #[neon_macros::method]
+    fn take_numeric(&self, u_32: u32, i_32: i32) -> i32 {
+        *self.my_val.borrow_mut() = i_32;
+        i_32 + u_32 as i32
     }
 }
 
