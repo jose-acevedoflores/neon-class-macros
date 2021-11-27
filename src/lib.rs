@@ -53,14 +53,14 @@ pub(crate) fn get_gen_method_name(orig_name: &proc_macro2::Ident) -> proc_macro2
 /// Generates a constructor for the JS side based on the annotated method.
 #[proc_macro_attribute]
 pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
-    let method_ast = parse_macro_input!(input as ImplItemMethod);
-    let method_name = &method_ast.sig.ident;
-    let gen_constructor_ident = get_gen_method_name(method_name);
+    let orig_ctor_ast = parse_macro_input!(input as ImplItemMethod);
+    let orig_ctor_name = &orig_ctor_ast.sig.ident;
+    let gen_ctor_name = get_gen_method_name(orig_ctor_name);
 
-    let ((arg_idents, arg_parsing), _) = utils::parse_native_args(&method_ast.sig.inputs);
+    let ((arg_idents, arg_parsing), _) = utils::parse_native_args(&orig_ctor_ast.sig.inputs);
 
     let tokens = quote! {
-        #method_ast
+        #orig_ctor_ast
 
         /// Generated constructor for the JS side.
         ///
@@ -68,7 +68,7 @@ pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
         /// ```js
         /// const jsObj = new RustExportedValue();
         /// ```
-        pub fn #gen_constructor_ident(mut cx: neon::prelude::FunctionContext) -> neon::prelude::JsResult<neon::prelude::JsUndefined> {
+        pub fn #gen_ctor_name(mut cx: neon::prelude::FunctionContext) -> neon::prelude::JsResult<neon::prelude::JsUndefined> {
             // Need this in scope for cx.this().set to work
             use neon::prelude::Object;
             // required by the expansion of `arg_parsing`
@@ -76,8 +76,7 @@ pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
 
             #(#arg_parsing)*
 
-            // Call original method decorated as constructor
-            let res = Self::#method_name(#(#arg_idents,)*).map_err(|e| {
+            let res = Self::#orig_ctor_name(#(#arg_idents,)*).map_err(|e| {
                 cx.throw_type_error::<_, ()>(format!("Failed to construct {}", e))
                     .unwrap_err()
             })?;
@@ -97,29 +96,29 @@ pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
 ///
 #[proc_macro_attribute]
 pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
-    let method_ast = parse_macro_input!(input as ImplItemMethod);
-    let method_name = &method_ast.sig.ident;
-    let gen_method_name = get_gen_method_name(method_name);
-    let output = &method_ast.sig.output;
+    let orig_method_ast = parse_macro_input!(input as ImplItemMethod);
+    let orig_method_name = &orig_method_ast.sig.ident;
+    let gen_method_name = get_gen_method_name(orig_method_name);
+    let output = &orig_method_ast.sig.output;
 
     let gen_doc = proc_macro2::TokenStream::from_str(&format!(
         "/// Generated method for [`{0}`](#method.{0}). See [`method`](neon_class_macros::method) macro for details.",
-        method_name
+        orig_method_name
     ))
     .unwrap();
 
     let ((arg_idents, arg_parsing), context_is_arg) =
-        utils::parse_native_args(&method_ast.sig.inputs);
+        utils::parse_native_args(&orig_method_ast.sig.inputs);
 
     let (output, native_method_result_parser) = utils::parse_return_type(output);
 
     let native_method_call = if context_is_arg {
         quote! {
-            this.#method_name(cx, #(#arg_idents,)*)
+            this.#orig_method_name(cx, #(#arg_idents,)*)
         }
     } else {
         quote! {
-            this.#method_name(#(#arg_idents,)*)
+            this.#orig_method_name(#(#arg_idents,)*)
         }
     };
 
@@ -135,7 +134,7 @@ pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
     };
 
     let tokens = quote! {
-        #method_ast
+        #orig_method_ast
 
         /// **TODO DERIVE LIFETIME FROM OUTPUT**
         ///
