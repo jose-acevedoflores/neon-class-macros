@@ -30,7 +30,7 @@ impl TryFrom<DllMap> for HashMap<String, PathBuf> {
 }
 
 #[allow(dead_code)]
-#[derive(neon_macros::Class)]
+#[derive(neon_class_macros::Class)]
 pub struct TestStruct {
     path_to_exe: PathBuf,
     dll_path_map: HashMap<String, PathBuf>,
@@ -39,9 +39,9 @@ pub struct TestStruct {
 
 impl Finalize for TestStruct {}
 
-#[neon_macros::impl_block]
+#[neon_class_macros::impl_block]
 impl TestStruct {
-    #[neon_macros::constructor]
+    #[neon_class_macros::constructor]
     pub fn constructor(path_to_exe: String, dll_path_map: DllMap) -> Result<Self, String> {
         let dll_path_map = dll_path_map.try_into()?;
 
@@ -52,7 +52,7 @@ impl TestStruct {
         })
     }
 
-    #[neon_macros::method]
+    #[neon_class_macros::method]
     fn start_camel<'ctx>(
         &self,
         mut cx: FunctionContext<'ctx>,
@@ -68,7 +68,7 @@ impl TestStruct {
         Ok(p)
     }
 
-    #[neon_macros::method]
+    #[neon_class_macros::method]
     fn another_one<'ctx>(
         &self,
         mut cx: FunctionContext<'ctx>,
@@ -79,7 +79,7 @@ impl TestStruct {
         Ok(cx.string(res))
     }
 
-    #[neon_macros::method]
+    #[neon_class_macros::method]
     fn plain_method(&self, num: f64) -> String {
         let p = self.dll_path_map.get("LE_KEY");
         format!(
@@ -90,12 +90,12 @@ impl TestStruct {
         )
     }
 
-    #[neon_macros::method]
+    #[neon_class_macros::method]
     fn method_that_returns_nothing(&self) {
         println!("do something {:?}", self.path_to_exe);
     }
 
-    #[neon_macros::method]
+    #[neon_class_macros::method]
     fn take_numeric(&self, u_32: u32, i_32: i32) -> i32 {
         *self.my_val.borrow_mut() = i_32;
         i_32 + u_32 as i32

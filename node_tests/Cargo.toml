@@ -8,7 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 neon-serde = { git = "https://github.com/NZXTCorp/neon-serde.git", branch = "refactor/update-neon-0.10" }
-neon_macros = { path = "../" }
+neon_class_macros = { path = "../" }
 serde = { version = "1.0", features = ["derive"] }
 
 [dependencies.neon]

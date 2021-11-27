@@ -103,7 +103,7 @@ pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
     let output = &method_ast.sig.output;
 
     let gen_doc = proc_macro2::TokenStream::from_str(&format!(
-        "/// Generated method for [`{0}`](#method.{0}). See [`method`](neon_macros::method) macro for details.",
+        "/// Generated method for [`{0}`](#method.{0}). See [`method`](neon_class_macros::method) macro for details.",
         method_name
     ))
     .unwrap();
@@ -251,7 +251,7 @@ pub fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
         let fnct = quote! {
             /// Turn an object of `Self` into a JS object.
             ///
-            /// See example usage in [impl_block](macro@neon_macros::impl_block#to_js_obj).
+            /// See example usage in [impl_block](macro@neon_class_macros::impl_block#to_js_obj).
             pub fn to_js_obj<'a, 'b>(cx: &'b mut impl neon::prelude::Context<'a>, obj: Self) -> neon::prelude::JsResult<'a, neon::prelude::JsObject> {
                 let constructor = neon::prelude::JsFunction::new(cx, |mut cx| {
                     let this = cx.argument::<neon::prelude::JsBox<Self>>(0)?;

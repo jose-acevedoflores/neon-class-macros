@@ -134,7 +134,7 @@ pub struct NeonMacrosAttrs {
     pub main: String,
     /// List of args given to the macro
     ///
-    /// For example, given `#[neon_macros::method(arg1, arg2)]` this `args` field would be:
+    /// For example, given `#[neon_class_macros::method(arg1, arg2)]` this `args` field would be:
     /// `["arg1", "arg2"]`
     pub args: Vec<String>,
 }
@@ -149,7 +149,7 @@ impl NeonMacrosAttrs {
 
         parsed_attrs.method.attrs.iter().for_each(|attrs| {
             if let Some(attribute_pkg) = attrs.path.segments.first() {
-                if attribute_pkg.ident != "neon_macros" {
+                if attribute_pkg.ident != "neon_class_macros" {
                     return;
                 }
             }

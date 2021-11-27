@@ -1,5 +1,5 @@
 [package]
-name = "neon_macros"
+name = "neon_class_macros"
 version = "0.1.0"
 description = "Macros for convenieniently expressing JS Classes with Neon apis"
 keywords = ["template", "proc_macro", "procmacro", "Neon", "N-API", "nodejs"]
