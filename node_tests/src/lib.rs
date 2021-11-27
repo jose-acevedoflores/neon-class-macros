@@ -8,6 +8,7 @@ fn node_entrypoint(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("test", test)?;
 
     derived_class::TestStruct::register_constructor(&mut cx)?;
+    derived_class::TestStruct2::register_constructor(&mut cx)?;
     Ok(())
 }
 // Hack so this file can be included in the src/lib.rs Examples section.

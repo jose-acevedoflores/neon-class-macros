@@ -57,7 +57,24 @@ pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
     let orig_ctor_name = &orig_ctor_ast.sig.ident;
     let gen_ctor_name = get_gen_method_name(orig_ctor_name);
 
-    let ((arg_idents, arg_parsing), _) = utils::parse_native_args(&orig_ctor_ast.sig.inputs);
+    let ((arg_idents, arg_parsing), cx_is_arg) =
+        utils::parse_native_args(&orig_ctor_ast.sig.inputs);
+
+    let native_method_call = if cx_is_arg {
+        quote! {
+            Self::#orig_ctor_name(&mut cx, #(#arg_idents,)*).map_err(|e| {
+                cx.throw_type_error::<_, ()>(format!("Failed to construct {}", e))
+                    .unwrap_err()
+            })?;
+        }
+    } else {
+        quote! {
+            Self::#orig_ctor_name(#(#arg_idents,)*).map_err(|e| {
+                cx.throw_type_error::<_, ()>(format!("Failed to construct {}", e))
+                    .unwrap_err()
+            })?;
+        }
+    };
 
     let tokens = quote! {
         #orig_ctor_ast
@@ -76,10 +93,7 @@ pub fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
 
             #(#arg_parsing)*
 
-            let res = Self::#orig_ctor_name(#(#arg_idents,)*).map_err(|e| {
-                cx.throw_type_error::<_, ()>(format!("Failed to construct {}", e))
-                    .unwrap_err()
-            })?;
+            let res = #native_method_call
 
             let this = cx.boxed(res);
             cx.this().set(&mut cx, Self::THIS, this)?;
@@ -107,12 +121,12 @@ pub fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
     ))
     .unwrap();
 
-    let ((arg_idents, arg_parsing), context_is_arg) =
+    let ((arg_idents, arg_parsing), cx_is_arg) =
         utils::parse_native_args(&orig_method_ast.sig.inputs);
 
     let (output, native_method_result_parser) = utils::parse_return_type(output);
 
-    let native_method_call = if context_is_arg {
+    let native_method_call = if cx_is_arg {
         quote! {
             this.#orig_method_name(cx, #(#arg_idents,)*)
         }

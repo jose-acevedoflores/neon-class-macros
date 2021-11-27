@@ -1,9 +1,11 @@
-use neon::prelude::{Context, Finalize, FunctionContext, JsPromise, JsResult};
+use neon::prelude::{Context, Finalize, FunctionContext, JsFunction, JsPromise, JsResult, Object};
 use neon::types::JsString;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::thread::JoinHandle;
 
 #[derive(Serialize, Debug, Deserialize)]
 struct KV {
@@ -118,4 +120,49 @@ pub(crate) fn test(mut cx: FunctionContext) -> JsResult<JsPromise> {
 
     Ok(p)
 }
+
+#[allow(dead_code)]
+#[derive(neon_class_macros::Class)]
+pub struct TestStruct2 {
+    path_to_exe: Arc<PathBuf>,
+    dll_path_map: HashMap<String, PathBuf>,
+    bg_handle: JoinHandle<()>,
+}
+
+impl Finalize for TestStruct2 {}
+
+#[neon_class_macros::impl_block]
+impl TestStruct2 {
+    #[neon_class_macros::constructor]
+    pub fn constructor_with_cx(
+        cx: &mut FunctionContext,
+        path_to_exe: String,
+        dll_path_map: DllMap,
+    ) -> Result<Self, String> {
+        let dll_path_map = dll_path_map.try_into()?;
+
+        let js_fn = cx.argument::<JsFunction>(2).unwrap().root(cx);
+        let path_arc = Arc::new(path_to_exe.into());
+        let channel = cx.channel();
+        let path_arc_thread = Arc::clone(&path_arc);
+        let bg_handle = std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_secs(1));
+            channel.send(move |mut cx| {
+                let this = cx.undefined();
+                let callback = js_fn.into_inner(&mut cx);
+                let args =
+                    vec![cx.string(format!("called from rust thread-{:?}", path_arc_thread))];
+                callback.call(&mut cx, this, args)?;
+                Ok(())
+            });
+        });
+
+        Ok(Self {
+            path_to_exe: path_arc,
+            dll_path_map,
+            bg_handle,
+        })
+    }
+}
+
 // Hack so this file can be included in the src/lib.rs Examples section.

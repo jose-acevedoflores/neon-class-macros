@@ -10,11 +10,11 @@ fn is_native_numeric(arg_type: &Ident) -> bool {
     arg_type == "u32" || arg_type == "f64" || arg_type == "i32"
 }
 
-pub type ContextIsArg = bool;
+pub type CxIsArg = bool;
 
 pub fn parse_native_args(
     input_args: &Punctuated<FnArg, Comma>,
-) -> ((Vec<Ident>, Vec<TokenStream>), ContextIsArg) {
+) -> ((Vec<Ident>, Vec<TokenStream>), CxIsArg) {
     // while parsing all the args we might encounter `self` and a `FunctionContext`. In those
     // cases we need to subtract that from the arg index in order to find the correct arg on the js side.
     // Example:
@@ -23,7 +23,7 @@ pub fn parse_native_args(
     //   `num` is really `idx` = 2 but with the `idx_adjuster` that becomes idx 0 so
     //   we can do `cx.argument.get(idx - idx_adjuster)`
     let mut idx_adjuster = 0;
-    let mut context_is_arg = false;
+    let mut cx_is_arg = false;
     let parsed_args: Vec<(Ident, TokenStream)> = input_args
         .iter()
         .enumerate()
@@ -34,10 +34,24 @@ pub fn parse_native_args(
                     if arg_type == "FunctionContext" {
                         // FunctionContext as second arg so skip this one
                         idx_adjuster += 1;
-                        context_is_arg = true;
+                        cx_is_arg = true;
                         return None;
                     }
                     Some(extract_from_native_input_type(idx - idx_adjuster, d))
+                }
+                Type::Reference(ty_ref) => {
+                    match ty_ref.elem.as_ref() {
+                        Type::Path(d) => {
+                            let arg_type = &d.path.segments.last().unwrap().ident;
+                            if arg_type == "FunctionContext" {
+                                // FunctionContext as second arg so skip this one
+                                idx_adjuster += 1;
+                                cx_is_arg = true;
+                            }
+                            None
+                        }
+                        _ => None,
+                    }
                 }
                 _ => None,
             },
@@ -50,7 +64,7 @@ pub fn parse_native_args(
         .flatten()
         .collect();
 
-    (parsed_args.iter().cloned().unzip(), context_is_arg)
+    (parsed_args.iter().cloned().unzip(), cx_is_arg)
 }
 
 fn extract_from_native_input_type(arg_idx: usize, arg: &TypePath) -> (Ident, TokenStream) {
