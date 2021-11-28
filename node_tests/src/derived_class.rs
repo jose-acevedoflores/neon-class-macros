@@ -104,6 +104,7 @@ impl TestStruct {
     }
 }
 
+// Needed for the try_build tests.
 #[allow(unused)]
 fn main() {}
 

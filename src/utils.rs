@@ -220,7 +220,17 @@ impl ImplTree {
 
         for method in methods {
             if method.is_constructor() {
-                s.constructor = Some(method.method.clone());
+                if s.constructor.is_none() {
+                    s.constructor = Some(method.method);
+                } else {
+                    panic!(
+                        "There is already a method annotated as constructor with the name '{}'.\n\
+                    With neon we can only export one value so the method '{}' is not allowed.\n\
+                    To fix it, choose one of the two.",
+                        s.constructor.unwrap().sig.ident,
+                        method.method.sig.ident
+                    )
+                }
             } else if method.is_method() {
                 s.methods.push(method.method);
             }
