@@ -206,6 +206,7 @@ impl NeonMacrosAttrs {
 }
 
 pub struct ImplTree {
+    /// Only allow one constructor since only one value can be exported with a given struct's name.
     pub constructor: Option<ImplItemMethod>,
     pub methods: Vec<ImplItemMethod>,
 }

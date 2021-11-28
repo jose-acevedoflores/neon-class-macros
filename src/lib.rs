@@ -240,12 +240,14 @@ pub fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
     };
 
     if let Some(constructor) = &impl_tree.constructor {
-        let gen_ctor_name = get_gen_method_name(&constructor.sig.ident);
+        let orig_ctor_name = &constructor.sig.ident;
+        let gen_ctor_name = get_gen_method_name(orig_ctor_name);
+        let register_fn_name = format_ident!("register_{}", orig_ctor_name);
 
         let register_fn = {
             let fnct = quote! {
                 /// Expose the constructor for this object to the JS side.
-                pub fn register_constructor(cx: &mut neon::prelude::ModuleContext) -> neon::prelude::NeonResult<()> {
+                pub fn #register_fn_name(cx: &mut neon::prelude::ModuleContext) -> neon::prelude::NeonResult<()> {
                     let constructor = neon::prelude::JsFunction::new(cx, Self::#gen_ctor_name)?;
 
                     #prototype_setup_tok
