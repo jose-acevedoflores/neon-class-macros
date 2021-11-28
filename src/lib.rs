@@ -1,10 +1,10 @@
 //!
-//! This crate aims to simplify some of the interactions with the [`neon`] api when it comes to
-//! dealing with mirroring rust structs as JS classes.
+#![doc = include_str!("../README.md")]
 //!
 //! ## Example
 //!
-//! This example focuses on exporting a `TestStruct` as a JS class.
+//! This example focuses on exporting a `TestStruct` as a JS class. It shows some of the method
+//! signatures that are possible by using this crate.
 //!
 //! #### Rust side
 //!
