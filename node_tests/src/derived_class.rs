@@ -121,6 +121,7 @@ pub(crate) fn test(mut cx: FunctionContext) -> JsResult<JsPromise> {
     Ok(p)
 }
 
+/// This Struct is to test a constructor that takes in the [`FunctionContext`] as the first argument.
 #[allow(dead_code)]
 #[derive(neon_class_macros::Class)]
 pub struct TestStruct2 {
@@ -133,6 +134,7 @@ impl Finalize for TestStruct2 {}
 
 #[neon_class_macros::impl_block]
 impl TestStruct2 {
+    /// Augment the constructor with the [`FunctionContext`]
     #[neon_class_macros::constructor]
     pub fn constructor_with_cx(
         cx: &mut FunctionContext,
