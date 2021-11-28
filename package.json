@@ -2,6 +2,7 @@
   "name": "neon-macros",
   "version": "0.1.0",
   "description": "Add commitizen",
+  "repository": "https://github.com/jose-acevedoflores/neon-class-macros",
   "directories": {
     "test": "tests"
   },

@@ -5,6 +5,7 @@ description = "Macros for convenieniently expressing JS Classes with Neon apis"
 keywords = ["template", "proc_macro", "procmacro", "Neon", "N-API", "nodejs"]
 edition = "2021"
 license = "MIT"
+repository = "https://github.com/jose-acevedoflores/neon-class-macros"
 resolver = "2"
 
 [lib]
