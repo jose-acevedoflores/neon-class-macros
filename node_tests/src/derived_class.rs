@@ -16,14 +16,14 @@ struct KV {
 
 #[derive(Serialize, Deserialize)]
 /// Contain a list of key/value pairs.
-pub struct DllMap {
+pub struct MapLike {
     map: Vec<KV>,
 }
 
-impl TryFrom<DllMap> for HashMap<String, PathBuf> {
+impl TryFrom<MapLike> for HashMap<String, PathBuf> {
     type Error = String;
 
-    fn try_from(value: DllMap) -> Result<Self, Self::Error> {
+    fn try_from(value: MapLike) -> Result<Self, Self::Error> {
         let mut m = HashMap::new();
         for KV { k, v } in value.map {
             m.insert(k, v.into());
@@ -35,8 +35,8 @@ impl TryFrom<DllMap> for HashMap<String, PathBuf> {
 #[allow(dead_code)]
 #[derive(neon_class_macros::Class)]
 pub struct TestStruct {
-    path_to_exe: PathBuf,
-    dll_path_map: HashMap<String, PathBuf>,
+    a_path: PathBuf,
+    a_map: HashMap<String, PathBuf>,
     my_val: RefCell<i32>,
 }
 
@@ -45,12 +45,12 @@ impl Finalize for TestStruct {}
 #[neon_class(impl_block)]
 impl TestStruct {
     #[neon_class(constructor)]
-    pub fn constructor(path_to_exe: String, dll_path_map: DllMap) -> Result<Self, String> {
-        let dll_path_map = dll_path_map.try_into()?;
+    pub fn constructor(a_path: String, map_like: MapLike) -> Result<Self, String> {
+        let a_map = map_like.try_into()?;
 
         Ok(Self {
-            path_to_exe: path_to_exe.into(),
-            dll_path_map,
+            a_path: a_path.into(),
+            a_map,
             my_val: RefCell::new(0),
         })
     }
@@ -78,13 +78,13 @@ impl TestStruct {
         num: u32,
         msg: String,
     ) -> JsResult<'ctx, JsString> {
-        let res = format!("hehe {}-{}-{:?}", msg, num, self.path_to_exe);
+        let res = format!("hehe {}-{}-{:?}", msg, num, self.a_path);
         Ok(cx.string(res))
     }
 
     #[neon_class(method)]
     fn plain_method(&self, num: f64) -> String {
-        let p = self.dll_path_map.get("LE_KEY");
+        let p = self.a_map.get("LE_KEY");
         format!(
             "to-str-{}-{}",
             num,
@@ -95,7 +95,7 @@ impl TestStruct {
 
     #[neon_class(method)]
     fn method_that_returns_nothing(&self) {
-        println!("do something {:?}", self.path_to_exe);
+        println!("do something {:?}", self.a_path);
     }
 
     #[neon_class(method)]
@@ -114,7 +114,7 @@ pub(crate) fn test(mut cx: FunctionContext) -> JsResult<JsPromise> {
     let (def, p) = cx.promise();
 
     std::thread::spawn(move || {
-        let m = DllMap { map: Vec::new() };
+        let m = MapLike { map: Vec::new() };
         let ts = TestStruct::constructor("random_path".into(), m).unwrap();
         std::thread::sleep(std::time::Duration::from_secs(2));
         chan.settle_with(def, move |cx| TestStruct::to_js_obj(cx, ts));
@@ -128,8 +128,8 @@ pub(crate) fn test(mut cx: FunctionContext) -> JsResult<JsPromise> {
 #[allow(dead_code)]
 #[derive(neon_class_macros::Class)]
 pub struct TestStruct2 {
-    path_to_exe: Arc<PathBuf>,
-    dll_path_map: HashMap<String, PathBuf>,
+    a_path: Arc<PathBuf>,
+    a_map: HashMap<String, PathBuf>,
     bg_handle: JoinHandle<()>,
 }
 
@@ -141,13 +141,13 @@ impl TestStruct2 {
     #[neon_class(constructor)]
     pub fn constructor_with_cx(
         cx: &mut FunctionContext,
-        path_to_exe: String,
-        dll_path_map: DllMap,
+        a_path: String,
+        map_like: MapLike,
     ) -> Result<Self, String> {
-        let dll_path_map = dll_path_map.try_into()?;
+        let a_map = map_like.try_into()?;
 
         let js_fn = cx.argument::<JsFunction>(2).unwrap().root(cx);
-        let path_arc = Arc::new(path_to_exe.into());
+        let path_arc = Arc::new(a_path.into());
         let channel = cx.channel();
         let path_arc_thread = Arc::clone(&path_arc);
         let bg_handle = std::thread::spawn(move || {
@@ -163,8 +163,8 @@ impl TestStruct2 {
         });
 
         Ok(Self {
-            path_to_exe: path_arc,
-            dll_path_map,
+            a_path: path_arc,
+            a_map,
             bg_handle,
         })
     }
