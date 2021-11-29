@@ -154,18 +154,24 @@ pub struct NeonMacrosAttrs {
 }
 
 impl NeonMacrosAttrs {
-    pub fn new(method: ImplItemMethod) -> Self {
+    pub fn new(method: ImplItemMethod) -> Option<Self> {
         let mut parsed_attrs = NeonMacrosAttrs {
             method,
             main: String::new(),
             args: Vec::new(),
         };
 
+        let mut neon_class_attribute_found = false;
+
         parsed_attrs.method.attrs.iter().for_each(|attrs| {
             if let Some(attribute_pkg) = attrs.path.segments.first() {
-                // TODO fix this for renames
+                // TODO fix this for renames. currently, not sure how to get if the macro was renamed
+                // at import. We use the macro name here to find the methods in the ast that were marked as
+                // 'constructor' or 'method'. See the rename_macro_error.rs test.
                 if attribute_pkg.ident != "neon_class" {
                     return;
+                } else {
+                    neon_class_attribute_found = true;
                 }
             }
 
@@ -191,7 +197,12 @@ impl NeonMacrosAttrs {
                 Meta::NameValue(_) => {}
             }
         });
-        parsed_attrs
+
+        if neon_class_attribute_found {
+            Some(parsed_attrs)
+        } else {
+            None
+        }
     }
 
     pub fn is_constructor(&self) -> bool {

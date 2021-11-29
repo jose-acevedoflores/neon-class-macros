@@ -140,7 +140,6 @@ fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
     tokens.into()
 }
 
-/// TODO only export if `pub` keyword is present ?
 /// Macro that decorates the methods that should be included in the JS prototype.
 ///
 #[doc = include_str!("../docs/method_macro.md")]
@@ -238,13 +237,23 @@ fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
         .iter()
         .map(|item| {
             if let ImplItem::Method(method) = item {
-                Some(NeonMacrosAttrs::new(method.clone()))
+                NeonMacrosAttrs::new(method.clone())
             } else {
                 None
             }
         })
         .flatten()
         .collect::<Vec<NeonMacrosAttrs>>();
+
+    if attrs_for_each_decorated_method.is_empty() {
+        panic!(
+            "Found an 'impl_block' argument for struct {} but no constructor or methods were found.\n\
+        This could be because:\n  \
+          1. none are implemented, in which case the 'impl_block' decoration can be removed.\n  \
+          2. the 'neon_class' macro was renamed to something else. This is currently not supported.",
+               struct_name.to_string()
+        );
+    }
 
     let impl_tree = ImplTree::new(attrs_for_each_decorated_method);
     let gen_method_names: Vec<proc_macro2::Ident> = impl_tree

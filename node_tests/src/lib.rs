@@ -3,6 +3,10 @@ use neon::prelude::{ModuleContext, NeonResult};
 
 mod derived_class;
 
+// This is not really a feature, used just to signal the IDE to include the source files.
+#[cfg(feature = "error_try_builds")]
+mod errors;
+
 #[neon::main]
 fn node_entrypoint(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("test", test)?;

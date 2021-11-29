@@ -1,0 +1,10 @@
+error: custom attribute panicked
+  --> ./src/errors/rename_macro_error.rs:12:1
+   |
+12 | #[cant_rename(impl_block)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: message: Found an 'impl_block' argument for struct "TestStruct" but no constructor or methods were found.
+           This could be because:
+             1. none are implemented, in which case the 'impl_block' decoration can be removed.
+             2. the 'neon_class' macro was renamed to something else. This is currently not supported.
