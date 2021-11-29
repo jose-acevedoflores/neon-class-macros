@@ -1,6 +1,6 @@
 This crate aims to simplify some of the interactions with the [neon](https://github.com/neon-bindings/neon) api when it comes to
 dealing with mirroring rust structs as JS classes. The inspiration for this crate come mostly from
-[napi-rs](https://github.com/napi-rs/napi-rs).
+[napi-rs](https://github.com/napi-rs/napi-rs) and [node-bindgen](https://github.com/infinyon/node-bindgen).
 
 It lets you write something like this in rust:
 
@@ -44,6 +44,9 @@ const mod = require("native.node");
 const obj = mod.TestStruct();
 obj.method(7, "some_string");
 ```
+
+This crate relies heavily on this fork of the [`neon_serde`](https://github.com/NZXTCorp/neon-serde) crate for
+serializing and deserializing method inputs/outputs.
 
 For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived_class.rs)
 
