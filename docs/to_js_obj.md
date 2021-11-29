@@ -4,6 +4,7 @@ Builds a JS object from `obj`
 
 ```rust
 use neon::prelude::{FunctionContext, Finalize, Context, JsResult, JsObject, JsString};
+use neon_class_macros::neon_class;
 
 #[derive(neon_class_macros::Class)]
 struct Dummy {
@@ -12,7 +13,7 @@ struct Dummy {
 
 impl Finalize for Dummy {}
 
-#[neon_class_macros::impl_block]
+#[neon_class(impl_block)]
 impl Dummy {
     pub fn new(arg: String) -> Self {
         Self {
@@ -20,7 +21,7 @@ impl Dummy {
         }
     }
 
-    #[neon_class_macros::method]
+    #[neon_class(method)]
     fn a_method<'ctx>(
         &self,
         mut cx: FunctionContext<'ctx>,

@@ -1,8 +1,8 @@
 error: custom attribute panicked
-  --> ./src/errors/multiple_ctor_error.rs:11:1
+  --> ./src/errors/multiple_ctor_error.rs:12:1
    |
-11 | #[neon_class_macros::impl_block]
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | #[neon_class(impl_block)]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: message: There is already a method annotated as constructor with the name 'constructor'.
            With neon we can only export one value so the method 'second_ctor_not_allowed' is not allowed.

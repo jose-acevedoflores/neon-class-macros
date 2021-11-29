@@ -6,6 +6,7 @@ It lets you write something like this in rust:
 
 ```rust
 use neon::prelude::{Context, Finalize, NeonResult, ModuleContext};
+use neon_class_macros::neon_class;
 
 #[derive(neon_class_macros::Class)]
 pub struct TestStruct {
@@ -13,16 +14,16 @@ pub struct TestStruct {
 }
 impl Finalize for TestStruct {}
 
-#[neon_class_macros::impl_block]
+#[neon_class(impl_block)]
 impl TestStruct {
-   #[neon_class_macros::constructor]
+   #[neon_class(constructor)]
    pub fn ctor() -> Result<Self, String> {
       Ok(Self{
          fields: Vec::new(),
       })
    }
 
-   #[neon_class_macros::method]
+   #[neon_class(method)]
    pub fn method(&self, num: u32, data: String) {
       println!("Do something {:?}-{}-{}", self.fields, num, data)
    }

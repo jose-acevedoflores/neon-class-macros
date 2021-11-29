@@ -12,19 +12,20 @@ Methods decorated with this macro can have the following forms:
 
 ```rust
 # use neon::prelude::{FunctionContext, Finalize, Context, JsResult, JsNumber};
+# use neon_class_macros::neon_class;
 # #[derive(neon_class_macros::Class)]
 # struct Dummy {
 #    field: String,
 # }
 # impl Finalize for Dummy {}
-# #[neon_class_macros::impl_block]
+# #[neon_class(impl_block)]
 # impl Dummy {
 #    pub fn new(arg: String) -> Self {
 #        Self {
 #            field: arg
 #        }
 #    }
-#[neon_class_macros::method]
+#[neon_class(method)]
 fn a_method<'ctx>(
     &self,
     mut cx: FunctionContext<'ctx>,
@@ -40,19 +41,20 @@ fn a_method<'ctx>(
 
 ```rust
 # use neon::prelude::{FunctionContext, Finalize, Context, JsResult, JsNumber};
+# use neon_class_macros::neon_class;
 # #[derive(neon_class_macros::Class)]
 # struct Dummy {
 #    field: String,
 # }
 # impl Finalize for Dummy {}
-# #[neon_class_macros::impl_block]
+# #[neon_class(impl_block)]
 # impl Dummy {
 #    pub fn new(arg: String) -> Self {
 #        Self {
 #            field: arg
 #        }
 #    }
-#[neon_class_macros::method]
+#[neon_class(method)]
 fn plain_method(&self, num: f64) -> String {
   format!("to-str-{}", num)
 }

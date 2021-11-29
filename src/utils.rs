@@ -163,12 +163,11 @@ impl NeonMacrosAttrs {
 
         parsed_attrs.method.attrs.iter().for_each(|attrs| {
             if let Some(attribute_pkg) = attrs.path.segments.first() {
-                if attribute_pkg.ident != "neon_class_macros" {
+                // TODO fix this for renames
+                if attribute_pkg.ident != "neon_class" {
                     return;
                 }
             }
-
-            parsed_attrs.main = format!("{}", attrs.path.segments.last().unwrap().ident);
 
             let m = attrs.parse_meta().unwrap();
             match &m {
@@ -178,13 +177,12 @@ impl NeonMacrosAttrs {
                         .push(format!("{}", path.segments.last().unwrap().ident));
                 }
                 Meta::List(meta_ls) => {
-                    let nested_meta = meta_ls.nested.first().unwrap();
-                    match nested_meta {
+                    let main_arg = meta_ls.nested.first().unwrap();
+                    match main_arg {
                         NestedMeta::Meta(meta) => {
                             if let Meta::Path(path) = meta {
-                                parsed_attrs
-                                    .args
-                                    .push(format!("{}", path.segments.last().unwrap().ident));
+                                parsed_attrs.main =
+                                    format!("{}", path.segments.last().unwrap().ident);
                             }
                         }
                         NestedMeta::Lit(_) => {}

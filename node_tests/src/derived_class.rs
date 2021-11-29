@@ -1,5 +1,6 @@
 use neon::prelude::{Context, Finalize, FunctionContext, JsFunction, JsPromise, JsResult, Object};
 use neon::types::JsString;
+use neon_class_macros::neon_class;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -41,9 +42,9 @@ pub struct TestStruct {
 
 impl Finalize for TestStruct {}
 
-#[neon_class_macros::impl_block]
+#[neon_class(impl_block)]
 impl TestStruct {
-    #[neon_class_macros::constructor]
+    #[neon_class(constructor)]
     pub fn constructor(path_to_exe: String, dll_path_map: DllMap) -> Result<Self, String> {
         let dll_path_map = dll_path_map.try_into()?;
 
@@ -54,7 +55,7 @@ impl TestStruct {
         })
     }
 
-    #[neon_class_macros::method]
+    #[neon_class(method)]
     fn start_camel<'ctx>(
         &self,
         mut cx: FunctionContext<'ctx>,
@@ -70,7 +71,7 @@ impl TestStruct {
         Ok(p)
     }
 
-    #[neon_class_macros::method]
+    #[neon_class(method)]
     fn another_one<'ctx>(
         &self,
         mut cx: FunctionContext<'ctx>,
@@ -81,7 +82,7 @@ impl TestStruct {
         Ok(cx.string(res))
     }
 
-    #[neon_class_macros::method]
+    #[neon_class(method)]
     fn plain_method(&self, num: f64) -> String {
         let p = self.dll_path_map.get("LE_KEY");
         format!(
@@ -92,12 +93,12 @@ impl TestStruct {
         )
     }
 
-    #[neon_class_macros::method]
+    #[neon_class(method)]
     fn method_that_returns_nothing(&self) {
         println!("do something {:?}", self.path_to_exe);
     }
 
-    #[neon_class_macros::method]
+    #[neon_class(method)]
     fn take_numeric(&self, u_32: u32, i_32: i32) -> i32 {
         *self.my_val.borrow_mut() = i_32;
         i_32 + u_32 as i32
@@ -134,10 +135,10 @@ pub struct TestStruct2 {
 
 impl Finalize for TestStruct2 {}
 
-#[neon_class_macros::impl_block]
+#[neon_class(impl_block)]
 impl TestStruct2 {
     /// Augment the constructor with the [`FunctionContext`]
-    #[neon_class_macros::constructor]
+    #[neon_class(constructor)]
     pub fn constructor_with_cx(
         cx: &mut FunctionContext,
         path_to_exe: String,
