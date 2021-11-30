@@ -30,9 +30,10 @@ use proc_macro::TokenStream;
 use proc_macro2::Literal;
 use quote::{format_ident, quote};
 use std::str::FromStr;
+use syn::spanned::Spanned;
 use syn::{
     parse_macro_input, AttributeArgs, DeriveInput, ImplItem, ImplItemConst, ImplItemMethod,
-    ItemImpl, Meta, NestedMeta, Type,
+    ItemImpl, Lifetime, Meta, NestedMeta, Type,
 };
 
 mod utils;
@@ -150,6 +151,11 @@ fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
     let gen_method_name = get_gen_method_name(orig_method_name);
     let output = &orig_method_ast.sig.output;
 
+    // methods that return a JsResult directly must provide a lifetime so if they do, we use that for the
+    // generated method. If they don't (like when they return native rust types) then we default to 'ctx.
+    let output_lifetime = utils::get_lifetime_from_return_type(output)
+        .unwrap_or_else(|| Lifetime::new("'ctx", output.span()));
+
     let gen_doc = proc_macro2::TokenStream::from_str(&format!(
         "/// Generated method for [`{0}`](#method.{0}). See [`method`](neon_class_macros::method) macro for details.",
         orig_method_name
@@ -159,7 +165,7 @@ fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
     let ((arg_idents, arg_parsing), cx_is_arg) =
         utils::parse_native_args(&orig_method_ast.sig.inputs);
 
-    let (output, native_method_result_parser) = utils::parse_return_type(output);
+    let (output, native_method_result_parser) = utils::parse_return_type(output, &output_lifetime);
 
     let native_method_call = if cx_is_arg {
         quote! {
@@ -185,10 +191,9 @@ fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
     let tokens = quote! {
         #orig_method_ast
 
-        /// **TODO DERIVE LIFETIME FROM OUTPUT**
         ///
         #gen_doc
-        pub fn #gen_method_name<'ctx>(mut cx: neon::prelude::FunctionContext<'ctx>) #output {
+        pub fn #gen_method_name<#output_lifetime>(mut cx: neon::prelude::FunctionContext<#output_lifetime>) #output {
             use neon::prelude::Object;
             // required by the expansion of `arg_parsing`
             use neon_serde::errors::MapErrIntoThrow;

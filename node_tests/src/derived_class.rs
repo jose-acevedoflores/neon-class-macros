@@ -72,12 +72,12 @@ impl TestStruct {
     }
 
     #[neon_class(method)]
-    fn another_one<'ctx>(
+    fn another_one<'cx>(
         &self,
-        mut cx: FunctionContext<'ctx>,
+        mut cx: FunctionContext<'cx>,
         num: u32,
         msg: String,
-    ) -> JsResult<'ctx, JsString> {
+    ) -> JsResult<'cx, JsString> {
         let res = format!("hehe {}-{}-{:?}", msg, num, self.a_path);
         Ok(cx.string(res))
     }

@@ -4,7 +4,10 @@ use quote::quote;
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::token::Comma;
-use syn::{FnArg, ImplItemMethod, Meta, NestedMeta, Pat, ReturnType, Type, TypePath};
+use syn::{
+    FnArg, GenericArgument, ImplItemMethod, Lifetime, Meta, NestedMeta, Pat, PathArguments,
+    ReturnType, Type, TypePath,
+};
 
 fn is_native_numeric(arg_type: &Ident) -> bool {
     arg_type == "u32" || arg_type == "f64" || arg_type == "i32"
@@ -87,7 +90,10 @@ type NativeResultParser = Option<fn(&Ident) -> proc_macro2::TokenStream>;
 ///    * [`unit`]: which needs to be converted to [`JsUndefined`](neon::prelude::JsUndefined)
 ///    * etc ...
 ///
-pub fn parse_return_type(output: &ReturnType) -> (proc_macro2::TokenStream, NativeResultParser) {
+pub fn parse_return_type(
+    output: &ReturnType,
+    lifetime: &Lifetime,
+) -> (proc_macro2::TokenStream, NativeResultParser) {
     match &output {
         ReturnType::Default => {
             let tok = quote! {
@@ -107,7 +113,7 @@ pub fn parse_return_type(output: &ReturnType) -> (proc_macro2::TokenStream, Nati
                 let native_method_return_type = &path.path.segments.last().unwrap().ident;
                 if native_method_return_type != "JsResult" {
                     let return_tok = quote! {
-                        -> neon::prelude::JsResult<'ctx, neon::prelude::JsValue>
+                        -> neon::prelude::JsResult<#lifetime, neon::prelude::JsValue>
                     };
 
                     return (
@@ -236,4 +242,19 @@ impl ImplTree {
 
         s
     }
+}
+
+pub fn get_lifetime_from_return_type(output: &ReturnType) -> Option<Lifetime> {
+    if let ReturnType::Type(_, ty) = output {
+        if let Type::Path(t_obj) = ty.as_ref() {
+            if let PathArguments::AngleBracketed(ab) =
+                &t_obj.path.segments.last().unwrap().arguments
+            {
+                if let GenericArgument::Lifetime(lf) = ab.args.first().unwrap() {
+                    return Some(lf.clone());
+                }
+            }
+        }
+    }
+    None
 }
