@@ -58,6 +58,7 @@ For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived
   3. for both `method` and `constructor`, the argument name is `cx` or `_cx`
 - For decorated methods that return a `JsResult` you cannot rename the binding. This means
   you need to use `JsResult` or the full path `neon::prelude::JsResult`.
+- A method decorated as `neon_class(constructor)` must return a `Result<String, T>` where `T` implements `Display`.
 
 ## System Dependencies
 
