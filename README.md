@@ -2,10 +2,13 @@ This crate aims to simplify some of the interactions with the [neon](https://git
 dealing with mirroring rust structs as JS classes. The inspiration for this crate come mostly from
 [napi-rs](https://github.com/napi-rs/napi-rs) and [node-bindgen](https://github.com/infinyon/node-bindgen).
 
+The main goal here is to eliminate some of the boilerplate needed when declaring classes on the rust side while still keeping
+the flexibility of accessing the `FunctionContext` struct provided by `neon` for more advanced interactions.
+
 It lets you write something like this in rust:
 
 ```rust
-use neon::prelude::{Context, Finalize, NeonResult, ModuleContext};
+use neon::prelude::{Context, Finalize, NeonResult, FunctionContext, ModuleContext};
 use neon_class_macros::neon_class;
 
 #[derive(neon_class_macros::Class)]
@@ -27,6 +30,11 @@ impl TestStruct {
    pub fn method(&self, num: u32, data: String) {
       println!("Do something {:?}-{}-{}", self.fields, num, data)
    }
+
+   #[neon_class(method)]
+   pub fn method_with_cx(&self, _cx: &mut FunctionContext, num: u32, data: String) {
+      println!("Do something {:?}-{}-{}", self.fields, num, data)
+   }
 }
 
 #[neon::main]
@@ -46,7 +54,7 @@ obj.method(7, "some_string");
 ```
 
 This crate relies heavily on this fork of the [`neon_serde`](https://github.com/NZXTCorp/neon-serde) crate for
-serializing and deserializing method inputs/outputs.
+serializing and deserializing a decorated method's inputs/outputs.
 
 For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived_class.rs)
 
@@ -73,4 +81,4 @@ For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived
 
 ## Running the tests
 
-1. `cargo test --features -for-tests` or use the alias `cargo t`
+1. `cargo test --features for-tests` or use the alias `cargo t`
