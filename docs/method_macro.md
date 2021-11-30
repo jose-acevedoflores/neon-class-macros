@@ -28,7 +28,7 @@ Methods decorated with this macro can have the following forms:
 #[neon_class(method)]
 fn a_method<'ctx>(
     &self,
-    mut cx: FunctionContext<'ctx>,
+    cx: &mut FunctionContext<'ctx>,
     num: u32,
 ) -> JsResult<'ctx, JsNumber> {
     Ok(cx.number(num * 2))

@@ -169,7 +169,7 @@ fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
 
     let native_method_call = if cx_is_arg {
         quote! {
-            this.#orig_method_name(cx, #(#arg_idents,)*)
+            this.#orig_method_name(&mut cx, #(#arg_idents,)*)
         }
     } else {
         quote! {

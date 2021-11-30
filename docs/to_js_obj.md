@@ -24,7 +24,7 @@ impl Dummy {
     #[neon_class(method)]
     fn a_method<'ctx>(
         &self,
-        mut cx: FunctionContext<'ctx>,
+        cx: &mut FunctionContext<'ctx>,
         num: u32,
         msg: String,
     ) -> JsResult<'ctx, JsString> {

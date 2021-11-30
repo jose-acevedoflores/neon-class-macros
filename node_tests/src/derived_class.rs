@@ -58,7 +58,7 @@ impl TestStruct {
     #[neon_class(method)]
     fn start_camel<'ctx>(
         &self,
-        mut cx: FunctionContext<'ctx>,
+        cx: &mut FunctionContext<'ctx>,
         num: u32,
     ) -> JsResult<'ctx, JsPromise> {
         let chan = cx.channel();
@@ -74,7 +74,7 @@ impl TestStruct {
     #[neon_class(method)]
     fn another_one<'cx>(
         &self,
-        mut cx: FunctionContext<'cx>,
+        cx: &mut FunctionContext<'cx>,
         num: u32,
         msg: String,
     ) -> JsResult<'cx, JsString> {
@@ -102,6 +102,17 @@ impl TestStruct {
     fn take_numeric(&self, u_32: u32, i_32: i32) -> i32 {
         *self.my_val.borrow_mut() = i_32;
         i_32 + u_32 as i32
+    }
+
+    #[neon_class(method)]
+    fn take_cx_but_return_native_val(&self, _cx: &mut FunctionContext, num: f64) -> String {
+        let p = self.a_map.get("LE_KEY");
+        format!(
+            "to-str-{}-{}",
+            num,
+            p.map(|p| p.to_str().unwrap().to_string())
+                .unwrap_or("NONE".to_string())
+        )
     }
 }
 
