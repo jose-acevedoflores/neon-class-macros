@@ -50,6 +50,15 @@ serializing and deserializing method inputs/outputs.
 
 For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived_class.rs)
 
+## Limitations
+
+- Methods decorated as `neon_class(constructor)` or `neon_class(method)` allow for receiving the `FunctionContext` directly as long as:
+  1. for a `constructor`, it's the first argument and is of type `&mut FunctionContext`.
+  2. for a `method`, it's the second argument and is of type `FunctionContext`
+  3. for both `method` and `constructor`, the argument name is `cx` or `_cx`
+- For decorated methods that return a `JsResult` you cannot rename the binding. This means
+  you need to use `JsResult` or the full path `neon::prelude::JsResult`.
+
 ## System Dependencies
 
 1. node/npm version 14 or newer

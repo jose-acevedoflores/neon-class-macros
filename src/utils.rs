@@ -4,7 +4,7 @@ use quote::quote;
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::token::Comma;
-use syn::{FnArg, ImplItemMethod, Meta, NestedMeta, ReturnType, Type, TypePath};
+use syn::{FnArg, ImplItemMethod, Meta, NestedMeta, Pat, ReturnType, Type, TypePath};
 
 fn is_native_numeric(arg_type: &Ident) -> bool {
     arg_type == "u32" || arg_type == "f64" || arg_type == "i32"
@@ -27,34 +27,21 @@ pub fn parse_native_args(
     let parsed_args: Vec<(Ident, TokenStream)> = input_args
         .iter()
         .enumerate()
-        .map(|(idx, f)| match f {
-            FnArg::Typed(t) => match t.ty.as_ref() {
-                Type::Path(d) => {
-                    let arg_type = &d.path.segments.last().unwrap().ident;
-                    if arg_type == "FunctionContext" {
-                        // FunctionContext as second arg so skip this one
+        .map(|(idx, fn_arg)| match fn_arg {
+            FnArg::Typed(fn_arg) => {
+                if let Pat::Ident(p_ident) = fn_arg.pat.as_ref() {
+                    let arg_name = &p_ident.ident;
+                    if arg_name == "cx" || arg_name == "_cx" {
                         idx_adjuster += 1;
                         cx_is_arg = true;
                         return None;
                     }
-                    Some(extract_from_native_input_type(idx - idx_adjuster, d))
                 }
-                Type::Reference(ty_ref) => {
-                    match ty_ref.elem.as_ref() {
-                        Type::Path(d) => {
-                            let arg_type = &d.path.segments.last().unwrap().ident;
-                            if arg_type == "FunctionContext" {
-                                // FunctionContext as second arg so skip this one
-                                idx_adjuster += 1;
-                                cx_is_arg = true;
-                            }
-                            None
-                        }
-                        _ => None,
-                    }
+                match fn_arg.ty.as_ref() {
+                    Type::Path(tp) => Some(extract_from_native_input_type(idx - idx_adjuster, tp)),
+                    _ => None,
                 }
-                _ => None,
-            },
+            }
             FnArg::Receiver(_) => {
                 // self parameter, skip one in adjusted idx
                 idx_adjuster += 1;
@@ -140,6 +127,8 @@ pub fn parse_return_type(output: &ReturnType) -> (proc_macro2::TokenStream, Nati
     let tok = quote! {
         #output
     };
+    // If we reach this point this means the user was already returning a `JsResult` so no need
+    // to parse the result of the original decorated method.
     (tok, None)
 }
 
