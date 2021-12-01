@@ -62,16 +62,16 @@ For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived
 
 #### `neon_class(impl_block)`
 
-Decorate the `impl` block of the struct you want to export. This macro generates two methods:
+Decorate the `impl` block of the struct you want to export. This macro uses the decorated struct name as the name of the constructor on the JS side.\
+This macro generates two methods:
 
 - `to_js_obj`: this associated method can be used to turn `Self` into a `JsValue`. It's the equivalent of calling `new` on the JS side.\
    For an example see [to_js_obj](./docs/to_js_obj.md).
-- `register_<your_contrcutor_name_here>`: This method is used to export the decorated struct as a value on the JS side.\
-   This macro uses the decorated struct name as the name of the constructor on the JS side.
+- `register_<your_contrcutor_name_here>`: This method is used to export the decorated struct as a value on the JS side.
 
 #### `neon_class(constructor)`
 
-Decorate one (and only one )of the methods as a constructor. The decorated method:
+Decorate one (and only one) of the methods as a constructor. The decorated method:
 
 - Must return a `Result<Self, E>` where `E` implements `Display`.
 - Can take `&mut FunctionContext` as first argument. The argument must be named `cx` or `_cx`.
@@ -83,7 +83,7 @@ Decorate one or more methods to be included as methods on the JS side. The decor
 - Must take `&self`.
 - Can take `&mut FunctionContext` as second argument. The argument must be named `cx` or `_cx`.
 - Can return a `JsResult` directly (as opposed to a type that will be converted via `neon_serde`) BUT you cannot change the binding.
-  Meaning, you cannot do `use neon::prelude::JsResult as <new bind>`, you have to use `JsResult` or the full path `neon::prelude::JsResult`
+  This means you cannot do `use neon::prelude::JsResult as <new bind>`, you have to use `JsResult` or the full path `neon::prelude::JsResult`
 - Is exposed to the JS side with the same name but with `mixedCase`.
 
 ## Build Dependencies

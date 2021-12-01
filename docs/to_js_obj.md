@@ -1,6 +1,6 @@
-Builds a JS object from `obj`
+Builds a JS object from the rust side
 
-#### to_js_obj
+#### `to_js_obj`
 
 ```rust
 use neon::prelude::{FunctionContext, Finalize, Context, JsResult, JsObject, JsString};
@@ -49,7 +49,7 @@ const dummy = addon.someNeonFn();
 const result = dummy.aMethod(34, "hallo");
 ```
 
-#### const THIS
+#### `const THIS`
 
 Adds a `const THIS: &str ...` variable to reference the `this` object.\
 **TODO:"User can provide their own"** As long as there is a THIS const present
