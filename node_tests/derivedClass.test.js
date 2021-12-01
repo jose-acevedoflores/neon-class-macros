@@ -7,35 +7,46 @@ const map = {
 };
 
 describe("TestStruct", () => {
-  it("basic constructor", () => {
+  test("constructor", () => {
     const obj = new mod.TestStruct(p, map);
     expect(obj).toBeDefined();
   });
 
-  describe("Calling generated methods", () => {
+  describe("Calling exported methods", () => {
     const obj = new mod.TestStruct(p, map);
 
-    it("calls method that had cx as second arg", () => {
+    it("calls 'start_camel'", async () => {
+      const res = await obj.startCamel(4);
+      expect(res).toBe(8);
+    });
+
+    it("calls 'another_one'", () => {
       const result = obj.anotherOne(21, "from-js");
       expect(result).toEqual(`hehe from-js-21-"${p}"`);
     });
 
-    it("calls method that didn't have cx as second arg", () => {
+    it("calls 'plain_method'", () => {
       const arg = 37.12;
       const res = obj.plainMethod(arg);
       expect(res).toBe(`to-str-${arg}-${val}`);
     });
 
-    it("calls method that didn't have cx as second arg and returns nothing", () => {
+    it("calls 'method_that_returns_nothing'", () => {
       expect(obj.methodThatReturnsNothing()).toBeUndefined();
     });
 
-    it("Check numeric values", () => {
+    it("calls 'take_numeric'", () => {
       expect(obj.takeNumeric(123, -3123)).toBe(-3000);
+    });
+
+    it("calls 'take_cx_but_return_native_val'", () => {
+      const arg = 3.2;
+      const res = obj.takeCxButReturnNativeVal(arg);
+      expect(res).toBe(`to-str-${arg}-${val}`);
     });
   });
 
-  it("check to_js_obj", async () => {
+  test("to_js_obj via the 'test' rust function", async () => {
     const ts = await mod.test();
     const arg = 12.8;
     const res = ts.plainMethod(arg);
@@ -44,7 +55,7 @@ describe("TestStruct", () => {
 });
 
 describe("TestStruct2", () => {
-  it("basic constructor with lambda argument", (done) => {
+  test("constructor_with_cx", (done) => {
     const obj = new mod.TestStruct2(p, map, (arg) => {
       try {
         expect(arg).toBe(`called from rust thread-"${p}"`);

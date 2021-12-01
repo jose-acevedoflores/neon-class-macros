@@ -149,6 +149,14 @@ impl Finalize for TestStruct2 {}
 #[neon_class(impl_block)]
 impl TestStruct2 {
     /// Augment the constructor with the [`FunctionContext`]
+    ///
+    /// This is an example of how with direct access to the FunctionContext we can access more advanced APIs like the `channel`
+    /// and how we can access more advanced args directly (the JsFunction).
+    ///
+    /// NOTE: on the JS side this function takes 3 args, the 2 we can auto convert via `neon_serde`
+    ///      that are part of the signature here and the third one is the `JsFunction` accessed with
+    ///      index 2 (`cx.argument::<JsFunction>(2)`)
+    ///
     #[neon_class(constructor)]
     pub fn constructor_with_cx(
         cx: &mut FunctionContext,
