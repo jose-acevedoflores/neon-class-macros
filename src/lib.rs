@@ -40,6 +40,7 @@ mod utils;
 
 const GENERATED_METHOD_PREFIX: &str = "__neon_gen_";
 
+/// Not doing anything currently.
 #[proc_macro_derive(Class)]
 pub fn derive_class(input: TokenStream) -> TokenStream {
     let _input = parse_macro_input!(input as DeriveInput);

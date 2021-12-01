@@ -58,18 +58,35 @@ serializing and deserializing a decorated method's inputs/outputs.
 
 For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived_class.rs)
 
-## Limitations
+## API
 
-- Methods decorated as `neon_class(constructor)` or `neon_class(method)` allow for receiving the `FunctionContext` directly as long as:
-  1. for a `constructor`, it's the first argument.
-  2. for a `method`, it's the second argument.
-  3. for both `method` and `constructor`, the argument name is `cx` or `_cx`
-  4. for both `method` and `constructor`, the argument type is `&mut FunctionContext`
-- For decorated methods that return a `JsResult` you cannot rename the binding. This means
-  you need to use `JsResult` or the full path `neon::prelude::JsResult`.
-- A method decorated as `neon_class(constructor)` must return a `Result<String, T>` where `T` implements `Display`.
+#### `neon_class(impl_block)`
 
-## System Dependencies
+Decorate the `impl` block of the struct you want to export. This macro generates two methods:
+
+- `to_js_obj`: this associated method can be used to turn `Self` into a `JsValue`. It's the equivalent of calling `new` on the JS side.\
+   For an example see [to_js_obj](./docs/to_js_obj.md).
+- `register_<your_contrcutor_name_here>`: This method is used to export the decorated struct as a value on the JS side.\
+   This macro uses the decorated struct name as the name of the constructor on the JS side.
+
+#### `neon_class(constructor)`
+
+Decorate one (and only one )of the methods as a constructor. The decorated method:
+
+- Must return a `Result<Self, E>` where `E` implements `Display`.
+- Can take `&mut FunctionContext` as first argument. The argument must be named `cx` or `_cx`.
+
+#### `neon_class(method)`
+
+Decorate one or more methods to be included as methods on the JS side. The decorated method:
+
+- Must take `&self`.
+- Can take `&mut FunctionContext` as second argument. The argument must be named `cx` or `_cx`.
+- Can return a `JsResult` directly (as opposed to a type that will be converted via `neon_serde`) BUT you cannot change the binding.
+  Meaning, you cannot do `use neon::prelude::JsResult as <new bind>`, you have to use `JsResult` or the full path `neon::prelude::JsResult`
+- Is exposed to the JS side with the same name but with `mixedCase`.
+
+## Build Dependencies
 
 1. node/npm version 14 or newer
 2. cargo version 1.56 or newer
