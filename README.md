@@ -56,7 +56,8 @@ obj.method(7, "some_string");
 This crate relies heavily on this fork of the [`neon_serde`](https://github.com/NZXTCorp/neon-serde) crate for
 serializing and deserializing a decorated method's inputs/outputs.
 
-For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived_class.rs)
+For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived_class.rs) for the rust side and the
+[`derivedClass.test.js`](./node_tests/derivedClass.test.js) for the JS side.
 
 ## API
 
