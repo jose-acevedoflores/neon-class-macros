@@ -77,6 +77,8 @@ Decorate one (and only one) of the methods as a constructor. The decorated metho
 - Must return a `Result<Self, E>` where `E` implements `Display`.
 - Can take `&mut FunctionContext` as first argument. The argument must be named `cx` or `_cx`.
 
+A method decorated as constructor is optional (you still have the `to_js_obj` associated method).
+
 #### `neon_class(method)`
 
 Decorate one or more methods to be included as methods on the JS side. The decorated method:
