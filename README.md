@@ -53,7 +53,7 @@ const obj = mod.TestStruct();
 obj.method(7, "some_string");
 ```
 
-This crate relies heavily on this fork of the [`neon_serde`](https://github.com/NZXTCorp/neon-serde) crate for
+This crate relies heavily on [this fork](https://github.com/NZXTCorp/neon-serde) of the `neon_serde` crate for
 serializing and deserializing a decorated method's inputs/outputs.
 
 For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived_class.rs) for the rust side and the
@@ -68,7 +68,8 @@ This macro generates two methods:
 
 - `to_js_obj`: this associated method can be used to turn `Self` into a `JsValue`. It's the equivalent of calling `new` on the JS side.\
    For an example see [to_js_obj](./docs/to_js_obj.md).
-- `register_<your_contrcutor_name_here>`: This method is used to export the decorated struct as a value on the JS side.
+- `register_<your_contructor_name_here>`: This method is used to export the decorated struct as a value on the JS side.\
+   This method is only present if there is a method decorated with `neon_class(constructor)`.
 
 #### `neon_class(constructor)`
 
