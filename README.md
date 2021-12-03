@@ -1,3 +1,7 @@
+# neon_class_macros
+
+![build](https://github.com/jose-acevedoflores/neon-class-macros/actions/workflows/rust.yml/badge.svg)
+
 This crate aims to simplify some of the interactions with the [neon](https://github.com/neon-bindings/neon) api when it comes to
 dealing with mirroring rust structs as JS classes. The inspiration for this crate come mostly from
 [napi-rs](https://github.com/napi-rs/napi-rs) and [node-bindgen](https://github.com/infinyon/node-bindgen).
