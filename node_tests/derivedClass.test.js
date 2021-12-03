@@ -35,8 +35,14 @@ describe("TestStruct", () => {
       expect(obj.methodThatReturnsNothing()).toBeUndefined();
     });
 
-    it("calls 'take_numeric'", () => {
-      expect(obj.takeNumeric(123, -3123)).toBe(-3000);
+    it("calls 'take_numeric' result ok", () => {
+      expect(obj.takeNumericReturnResult(123, -3123)).toBe(-3000);
+    });
+
+    it("calls 'take_numeric' and throws", () => {
+      expect(() => obj.takeNumericReturnResult(0, -1)).toThrow(
+        "Second arg was -1"
+      );
     });
 
     it("calls 'take_cx_but_return_native_val'", () => {

@@ -146,7 +146,9 @@ fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
 ///
 #[doc = include_str!("../docs/method_macro.md")]
 ///
-fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
+fn method(args: TokenStream, input: TokenStream) -> TokenStream {
+    let parsed_args = parse_macro_input!(args as AttributeArgs);
+
     let orig_method_ast = parse_macro_input!(input as ImplItemMethod);
     let orig_method_name = &orig_method_ast.sig.ident;
     let gen_method_name = get_gen_method_name(orig_method_name);
@@ -166,7 +168,9 @@ fn method(_args: TokenStream, input: TokenStream) -> TokenStream {
     let ((arg_idents, arg_parsing), cx_is_arg) =
         utils::parse_native_args(&orig_method_ast.sig.inputs);
 
-    let (output, native_method_result_parser) = utils::parse_return_type(output, &output_lifetime);
+    let throws_on_err = utils::throws_on_err(&parsed_args);
+    let (output, native_method_result_parser) =
+        utils::parse_return_type(output, &output_lifetime, throws_on_err);
 
     let native_method_call = if cx_is_arg {
         quote! {

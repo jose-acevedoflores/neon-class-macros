@@ -98,10 +98,14 @@ impl TestStruct {
         println!("do something {:?}", self.a_path);
     }
 
-    #[neon_class(method)]
-    fn take_numeric(&self, u_32: u32, i_32: i32) -> i32 {
-        *self.my_val.borrow_mut() = i_32;
-        i_32 + u_32 as i32
+    #[neon_class(method, throw_on_err)]
+    fn take_numeric_return_result(&self, u_32: u32, i_32: i32) -> Result<i32, &'static str> {
+        if i_32 == -1 {
+            Err("Second arg was -1")
+        } else {
+            *self.my_val.borrow_mut() = i_32;
+            Ok(i_32 + u_32 as i32)
+        }
     }
 
     #[neon_class(method)]

@@ -80,7 +80,7 @@ Decorate one (and only one) of the methods as a constructor. The decorated metho
 
 A method decorated as constructor is optional (you still have the `to_js_obj` associated method).
 
-#### `neon_class(method)`
+#### `neon_class(method, ...)`
 
 Decorate one or more methods to be included as methods on the JS side. The decorated method:
 
@@ -89,6 +89,14 @@ Decorate one or more methods to be included as methods on the JS side. The decor
 - Can return a `JsResult` directly (as opposed to a type that will be converted via `neon_serde`) BUT you cannot change the binding.
   This means you cannot do `use neon::prelude::JsResult as <new bind>`, you have to use `JsResult` or the full path `neon::prelude::JsResult`
 - Is exposed to the JS side with the same name but with `mixedCase`.
+
+Optional args:
+
+- `throw_on_err`:
+  - a method with this arg MUST return a `Result<T, E>` where `E` implements `Display`
+  - with this arg the `E` will be shown as a message on the JS side.\
+    See [`take_numeric_return_result`](./node_tests/src/derived_class.rs) and the corresponding
+    [`takeNumericReturnResult`](./node_tests/derivedClass.test.js) test.
 
 ## Build Dependencies
 

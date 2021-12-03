@@ -93,6 +93,7 @@ type NativeResultParser = Option<fn(&Ident) -> proc_macro2::TokenStream>;
 pub fn parse_return_type(
     output: &ReturnType,
     lifetime: &Lifetime,
+    throws_on_err: bool,
 ) -> (proc_macro2::TokenStream, NativeResultParser) {
     match &output {
         ReturnType::Default => {
@@ -116,15 +117,26 @@ pub fn parse_return_type(
                         -> neon::prelude::JsResult<#lifetime, neon::prelude::JsValue>
                     };
 
-                    return (
-                        return_tok,
+                    let parse_tok: NativeResultParser = if throws_on_err {
+                        Some(|ident| {
+                            quote! {
+                                let #ident = #ident.map_err(|e| {
+                                    cx.throw_error::<_, ()>(format!("{}", e)).unwrap_err()
+                                })?;
+                                let #ident = neon_serde::to_value(&mut cx, &#ident).map_err_into_throw(&mut cx)?;
+                                Ok(#ident)
+                            }
+                        })
+                    } else {
                         Some(|ident| {
                             quote! {
                                 let #ident = neon_serde::to_value(&mut cx, &#ident).map_err_into_throw(&mut cx)?;
                                 Ok(#ident)
                             }
-                        }),
-                    );
+                        })
+                    };
+
+                    return (return_tok, parse_tok);
                 }
             }
         }
@@ -143,12 +155,14 @@ pub struct NeonMacrosAttrs {
     pub main: String,
     /// List of args given to the macro
     ///
-    /// For example, given `#[neon_class_macros::method(arg1, arg2)]` this `args` field would be:
-    /// `["arg1", "arg2"]`
+    /// For example, given `#[neon_class(method, throw_on_err)]` this `args` field would be:
+    /// `["throw_on_err"]`
     pub args: Vec<String>,
 }
 
 impl NeonMacrosAttrs {
+    const VALID_ARGS: [&'static str; 1] = ["throw_on_err"];
+
     pub fn new(method: ImplItemMethod) -> Option<Self> {
         let mut parsed_attrs = NeonMacrosAttrs {
             method,
@@ -188,6 +202,15 @@ impl NeonMacrosAttrs {
                         }
                         NestedMeta::Lit(_) => {}
                     }
+                    // Skip 1 here since the first one is saved as the main
+                    meta_ls.nested.iter().skip(1).for_each(|nm| {
+                        let id = get_nested_meta_ident(nm).unwrap();
+                        if Self::VALID_ARGS.iter().any(|s| id == s) {
+                            parsed_attrs.args.push(format!("{}", id));
+                        } else {
+                            panic!("Invalid arg {}", id);
+                        }
+                    });
                 }
                 Meta::NameValue(_) => {}
             }
@@ -257,4 +280,19 @@ pub fn get_lifetime_from_return_type(output: &ReturnType) -> Option<Lifetime> {
         }
     }
     None
+}
+
+fn get_nested_meta_ident(nm: &NestedMeta) -> Option<&Ident> {
+    if let NestedMeta::Meta(Meta::Path(arg)) = nm {
+        arg.get_ident()
+    } else {
+        None
+    }
+}
+
+pub fn throws_on_err(attrs: &[NestedMeta]) -> bool {
+    attrs.iter().any(|attr| {
+        let id = get_nested_meta_ident(attr).unwrap();
+        id == NeonMacrosAttrs::VALID_ARGS[0]
+    })
 }
