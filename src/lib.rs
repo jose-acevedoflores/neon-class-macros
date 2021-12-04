@@ -96,7 +96,7 @@ fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
     let gen_ctor_name = get_gen_method_name(orig_ctor_name);
 
     let ((arg_idents, arg_parsing), cx_is_arg) =
-        utils::parse_native_args(&orig_ctor_ast.sig.inputs);
+        utils::parse_rust_fn_args(&orig_ctor_ast.sig.inputs);
 
     let native_method_call = if cx_is_arg {
         quote! {
@@ -166,7 +166,7 @@ fn method(args: TokenStream, input: TokenStream) -> TokenStream {
     .unwrap();
 
     let ((arg_idents, arg_parsing), cx_is_arg) =
-        utils::parse_native_args(&orig_method_ast.sig.inputs);
+        utils::parse_rust_fn_args(&orig_method_ast.sig.inputs);
 
     let throws_on_err = utils::throws_on_err(&parsed_args);
     let (output, native_method_result_parser) =
@@ -225,6 +225,7 @@ fn method(args: TokenStream, input: TokenStream) -> TokenStream {
 fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
     let mut impl_ast = parse_macro_input!(input as ItemImpl);
 
+    // adds a THIS const to the `impl` block.
     let this_token = {
         let this = quote! {
             const THIS: &'static str ="__this_obj";
@@ -232,9 +233,10 @@ fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
         let this: proc_macro::TokenStream = this.into();
         parse_macro_input!(this as ImplItemConst)
     };
-
     impl_ast.items.push(ImplItem::Const(this_token));
 
+    // Find the struct name for this impl block i.e. for `impl MyStruct { ...`
+    // the struct_name is MyStruct.
     let struct_name = if let Type::Path(arg) = impl_ast.self_ty.as_ref() {
         let name = &arg.path.segments.last().unwrap().ident;
         Literal::string(&name.to_string())
@@ -242,6 +244,7 @@ fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
         panic!("No struct_name for impl block")
     };
 
+    // find the decorated methods we care about, those with neon_class(...)
     let attrs_for_each_decorated_method = impl_ast
         .items
         .iter()
@@ -266,11 +269,14 @@ fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
     }
 
     let impl_tree = ImplTree::new(attrs_for_each_decorated_method);
+    // these are the names of the generated methods that get created by the `method` macro.
     let gen_method_names: Vec<proc_macro2::Ident> = impl_tree
         .methods
         .iter()
         .map(|e| get_gen_method_name(&e.sig.ident))
         .collect();
+
+    // for the same set of generated methods, create the mixedCase name for the JS side.
     let js_names: Vec<Literal> = impl_tree
         .methods
         .iter()
@@ -280,6 +286,7 @@ fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
         })
         .collect();
 
+    // setup the prototype object based on the decorated methods.
     let prototype_setup_tok = quote! {
         use neon::prelude::Object;
 

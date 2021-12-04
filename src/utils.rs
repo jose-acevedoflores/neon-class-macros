@@ -1,8 +1,7 @@
 //! Utility functions to help deal with converting from [`neon::types`] to supported rust types and vice versa.
 use proc_macro2::{Ident, Literal, TokenStream};
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::punctuated::Punctuated;
-use syn::spanned::Spanned;
 use syn::token::Comma;
 use syn::{
     FnArg, GenericArgument, ImplItemMethod, Lifetime, Meta, NestedMeta, Pat, PathArguments,
@@ -15,7 +14,7 @@ fn is_native_numeric(arg_type: &Ident) -> bool {
 
 pub type CxIsArg = bool;
 
-pub fn parse_native_args(
+pub fn parse_rust_fn_args(
     input_args: &Punctuated<FnArg, Comma>,
 ) -> ((Vec<Ident>, Vec<TokenStream>), CxIsArg) {
     // while parsing all the args we might encounter `self` and a `FunctionContext`. In those
@@ -46,7 +45,7 @@ pub fn parse_native_args(
                 }
             }
             FnArg::Receiver(_) => {
-                // self parameter, skip one in adjusted idx
+                // '&self' parameter, skip one in adjusted idx
                 idx_adjuster += 1;
                 None
             }
@@ -58,12 +57,11 @@ pub fn parse_native_args(
 }
 
 fn extract_from_native_input_type(arg_idx: usize, arg: &TypePath) -> (Ident, TokenStream) {
-    let arg_type = &arg.path.segments.last().unwrap().ident;
-
-    let arg_name = format!("arg_{}", arg_idx);
-    let arg_ident = Ident::new(&arg_name, arg.span());
+    let arg_ident = format_ident!("arg_{}", arg_idx);
     let idx_literal = Literal::i32_unsuffixed(arg_idx as i32);
-    let tok = if is_native_numeric(arg_type) {
+
+    let arg_type = arg.path.get_ident().filter(|i| is_native_numeric(i));
+    let tok = if let Some(arg_type) = arg_type {
         quote! {
             let #arg_ident = cx.argument::<neon::prelude::JsNumber>(#idx_literal)?.value(&mut cx) as #arg_type;
         }
@@ -84,11 +82,8 @@ type NativeResultParser = Option<fn(&Ident) -> proc_macro2::TokenStream>;
 ///
 /// Specifically it checks if the return type:
 /// * Can be used as is, meaning the decorated method already returns a valid [`JsResult`](neon::prelude::JsResult)
-/// * Needs to be converted. This applies to methods that return plain types like:
-///    * [`String`]: which needs to be converted to a [`JsValue`](neon::prelude::JsValue)
-///    * [`u32`]: which needs to be converted to a [`JsValue`](neon::prelude::JsValue)
-///    * [`unit`]: which needs to be converted to [`JsUndefined`](neon::prelude::JsUndefined)
-///    * etc ...
+/// * Needs to be converted. This applies to methods that don't return a [`JsResult`](neon::prelude::JsResult)\
+/// To convert the return types we use `neon_serde` so whatever is valid there should apply here.
 ///
 pub fn parse_return_type(
     output: &ReturnType,
@@ -151,9 +146,14 @@ pub fn parse_return_type(
 }
 
 pub struct NeonMacrosAttrs {
+    /// The full method AST.
     pub method: ImplItemMethod,
+    /// From a list of attributes, the first one
+    ///
+    /// For example, given `#[neon_class(method, throw_on_err)]` this `main` field would be:
+    /// `"method"`
     pub main: String,
-    /// List of args given to the macro
+    /// List of args given to the macro, excluding the main one.
     ///
     /// For example, given `#[neon_class(method, throw_on_err)]` this `args` field would be:
     /// `["throw_on_err"]`
