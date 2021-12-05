@@ -1,8 +1,6 @@
 use std::path::PathBuf;
 use std::process::Command;
 
-mod utils;
-
 #[cfg(feature = "for-tests")]
 fn check_feature() {}
 
@@ -11,24 +9,32 @@ fn check_feature() {
     panic!("Running tests without the 'for-tests' feature will result in errors. Use the alias `cargo t`");
 }
 
+#[cfg(target_os = "linux")]
 #[test]
 fn node_tests() {
-    let npm_cmd = utils::locate_npm();
-    run_cmd(npm_cmd);
+    let cmd = Command::new("npm");
+    run_cmd(cmd);
+}
+
+#[cfg(target_os = "windows")]
+#[test]
+fn node_tests() {
+    let mut cmd = Command::new("cmd.exe");
+    cmd.args(["/C", "npm"]);
+    run_cmd(cmd);
 }
 
 #[test]
 fn try_build_tests() {
     let cargo_cmd = PathBuf::from(env!("CARGO"));
-    run_cmd(cargo_cmd);
+    let cmd = Command::new(cargo_cmd);
+    run_cmd(cmd);
 }
 
-fn run_cmd(cmd_path: PathBuf) {
+fn run_cmd(mut cmd: Command) {
     check_feature();
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let path_to_node_tests = manifest_dir.join("node_tests");
-
-    let mut cmd = Command::new(cmd_path);
 
     let res = cmd
         .args(["test"])
