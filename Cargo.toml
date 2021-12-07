@@ -7,6 +7,11 @@ edition = "2021"
 license = "MIT"
 repository = "https://github.com/jose-acevedoflores/neon-class-macros"
 resolver = "2"
+include = [
+    "src/**/*.rs",
+    "/README.md",
+    "docs/**/*",
+]
 
 [lib]
 proc-macro = true
@@ -21,7 +26,7 @@ syn = { version = "1.0", features = ["full"] }
 [dev-dependencies]
 neon-serde = { git = "https://github.com/NZXTCorp/neon-serde.git", branch = "refactor/update-neon-0.10" }
 
-[dev-dependencies.neon]
+[dependencies.neon]
 version = "0.10.0-alpha.2"
 default-features = false
 features = ["napi-6"]

@@ -73,16 +73,19 @@ jobs:
       with:
         node-version: '14'
 
+    - name: Install node deps
+      run: |
+        npm install
+        npm run build:node_tests
+
+    - name: Build Docs
+      run: npm run docs
+
     - name: Run clippy
       run: cargo clippy --verbose -- -D warnings
 
-    - name: Install node deps
-      run: |
-       npm install
-       npm run build:node_tests
-    
     - name: Build
       run: cargo build --verbose
-      
+
     - name: Run tests
       run: cargo t --verbose

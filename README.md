@@ -57,11 +57,15 @@ const obj = mod.TestStruct();
 obj.method(7, "some_string");
 ```
 
-This crate relies heavily on [this fork](https://github.com/NZXTCorp/neon-serde) of the `neon_serde` crate for
-serializing and deserializing a decorated method's inputs/outputs.
-
 For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived_class.rs) for the rust side and the
 [`derivedClass.test.js`](./node_tests/derivedClass.test.js) for the JS side.
+
+## How to use
+
+1. Add [this fork](https://github.com/NZXTCorp/neon-serde) of `neon_serde` to your deps. This crate relies heavily on [this fork](https://github.com/NZXTCorp/neon-serde) of the `neon_serde` crate for
+   serializing and deserializing a decorated method's inputs/outputs.
+   if you use this crate.
+2. Follow examples
 
 ## API
 
@@ -111,7 +115,9 @@ Optional args:
 
 1. npm install
 2. npm run build:node_tests
+3. npm run docs.
 
 ## Running the tests
 
-1. `cargo test --features for-tests` or use the alias `cargo t`
+1. `cargo test --features for-tests` or use the alias `cargo t`.\
+   Need to run `npm run docs` before running the tests.

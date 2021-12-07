@@ -14,6 +14,7 @@
     "fmt:prettier:impl": "npm run bin:prettier -- \"**/*.{ts,js,md}\"",
     "commit": "cz",
     "preflight": "npm run check:fmt:prettier && cargo +nightly fmt -- --check && cargo sort --check && cargo clippy --verbose -- -D warnings",
+    "docs": "node scripts/prepareDocs.js && cargo doc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -21,11 +22,17 @@
   "devDependencies": {
     "commitizen": "^4.2.4",
     "cz-conventional-changelog": "^3.3.0",
+    "fs-extra": "^10.0.0",
     "prettier": "^2.4.1"
   },
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
     }
-  }
+  },
+  "live_docs": [
+    "node_tests/src/lib.rs",
+    "node_tests/src/derived_class.rs",
+    "node_tests/derivedClass.test.js"
+  ]
 }
