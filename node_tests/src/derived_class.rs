@@ -124,6 +124,7 @@ impl TestStruct {
 #[allow(unused)]
 fn main() {}
 
+#[neon_class_macros::function]
 pub(crate) fn test(mut cx: FunctionContext) -> JsResult<JsPromise> {
     let chan = cx.channel();
     let (def, p) = cx.promise();

@@ -32,7 +32,7 @@ use quote::{format_ident, quote};
 use std::str::FromStr;
 use syn::spanned::Spanned;
 use syn::{
-    parse_macro_input, AttributeArgs, DeriveInput, ImplItem, ImplItemConst, ImplItemMethod,
+    parse_macro_input, AttributeArgs, DeriveInput, ImplItem, ImplItemConst, ImplItemMethod, ItemFn,
     ItemImpl, Lifetime, Meta, NestedMeta, Type,
 };
 
@@ -46,6 +46,32 @@ pub fn derive_class(input: TokenStream) -> TokenStream {
     let _input = parse_macro_input!(input as DeriveInput);
 
     let tokens = quote! {};
+
+    tokens.into()
+}
+
+#[proc_macro_attribute]
+pub fn function(_args: TokenStream, input: TokenStream) -> TokenStream {
+    let orig_fn_ast = parse_macro_input!(input as ItemFn);
+    let orig_fn_name = &orig_fn_ast.sig.ident;
+    let register_fn_name = format_ident!("register_{}", orig_fn_name);
+    let gen_fn_name = get_gen_method_name(orig_fn_name);
+
+    let js_name = format!("{}", orig_fn_name).to_mixed_case();
+    let lit = Literal::string(&js_name);
+
+    let tokens = quote! {
+        #orig_fn_ast
+
+        pub fn #gen_fn_name(cx: &mut neon::prelude::FunctionContext) {
+
+        }
+
+        pub fn #register_fn_name(cx: &mut neon::prelude::ModuleContext) -> neon::prelude::NeonResult<()> {
+            cx.export_function(#lit, #orig_fn_name)?;
+            Ok(())
+        }
+    };
 
     tokens.into()
 }
