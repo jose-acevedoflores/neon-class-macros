@@ -27,7 +27,7 @@ syn = { version = "1.0", features = ["full"] }
 neon-serde = { git = "https://github.com/NZXTCorp/neon-serde.git", branch = "refactor/update-neon-0.10" }
 
 [dependencies.neon]
-version = "0.10.0-alpha.2"
+version = "=0.10.0-alpha.2"
 default-features = false
 features = ["napi-6"]
 
