@@ -53,10 +53,15 @@ describe("TestStruct", () => {
   });
 
   test("to_js_obj via the 'test' rust function", async () => {
-    const ts = await mod.test();
+    const path_num = 3;
+    const p = `random_path_${path_num}`;
+    const ts = await mod.test(3);
     const arg = 12.8;
     const res = ts.plainMethod(arg);
     expect(res).toBe(`to-str-${arg}-NONE`);
+
+    const result = ts.anotherOne(2122, "from-js");
+    expect(result).toEqual(`hehe from-js-2122-"${p}"`);
   });
 });
 

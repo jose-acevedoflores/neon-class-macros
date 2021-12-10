@@ -4,9 +4,52 @@ use quote::{format_ident, quote};
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::{
-    FnArg, GenericArgument, ImplItemMethod, Lifetime, Meta, NestedMeta, Pat, PathArguments,
+    FnArg, GenericArgument, ImplItemMethod, ItemFn, Lifetime, Meta, NestedMeta, Pat, PathArguments,
     ReturnType, Type, TypePath,
 };
+
+pub(crate) trait AnnotatedFn {
+    fn get_name(&self) -> &proc_macro2::Ident;
+    fn get_ret_type(&self) -> &syn::ReturnType;
+    fn inputs(&self) -> &Punctuated<FnArg, Comma>;
+    fn is_method(&self) -> bool;
+}
+
+impl AnnotatedFn for ImplItemMethod {
+    fn get_name(&self) -> &Ident {
+        &self.sig.ident
+    }
+
+    fn get_ret_type(&self) -> &ReturnType {
+        &self.sig.output
+    }
+
+    fn inputs(&self) -> &Punctuated<FnArg, Comma> {
+        &self.sig.inputs
+    }
+
+    fn is_method(&self) -> bool {
+        true
+    }
+}
+
+impl AnnotatedFn for ItemFn {
+    fn get_name(&self) -> &Ident {
+        &self.sig.ident
+    }
+
+    fn get_ret_type(&self) -> &ReturnType {
+        &self.sig.output
+    }
+
+    fn inputs(&self) -> &Punctuated<FnArg, Comma> {
+        &self.sig.inputs
+    }
+
+    fn is_method(&self) -> bool {
+        false
+    }
+}
 
 fn is_native_numeric(arg_type: &Ident) -> bool {
     arg_type == "u32" || arg_type == "f64" || arg_type == "i32"

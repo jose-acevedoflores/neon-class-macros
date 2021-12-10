@@ -125,13 +125,16 @@ impl TestStruct {
 fn main() {}
 
 #[neon_class_macros::function]
-pub(crate) fn test(mut cx: FunctionContext) -> JsResult<JsPromise> {
+pub(crate) fn test<'ctx>(
+    cx: &mut FunctionContext<'ctx>,
+    path_num: u32,
+) -> JsResult<'ctx, JsPromise> {
     let chan = cx.channel();
     let (def, p) = cx.promise();
 
     std::thread::spawn(move || {
         let m = MapLike { map: Vec::new() };
-        let ts = TestStruct::constructor("random_path".into(), m).unwrap();
+        let ts = TestStruct::constructor(format!("random_path_{}", path_num).into(), m).unwrap();
         std::thread::sleep(std::time::Duration::from_secs(2));
         chan.settle_with(def, move |cx| TestStruct::to_js_obj(cx, ts));
     });

@@ -24,7 +24,7 @@
 #![doc = include_str!("../node_tests/derivedClass.test.js")]
 //! ```
 //!
-use crate::utils::{ImplTree, NeonMacrosAttrs};
+use crate::utils::{AnnotatedFn, ImplTree, NeonMacrosAttrs};
 use heck::MixedCase;
 use proc_macro::TokenStream;
 use proc_macro2::Literal;
@@ -51,24 +51,22 @@ pub fn derive_class(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn function(_args: TokenStream, input: TokenStream) -> TokenStream {
+pub fn function(args: TokenStream, input: TokenStream) -> TokenStream {
     let orig_fn_ast = parse_macro_input!(input as ItemFn);
     let orig_fn_name = &orig_fn_ast.sig.ident;
+    let gen_function_name = get_gen_method_name(orig_fn_name);
     let register_fn_name = format_ident!("register_{}", orig_fn_name);
-    let gen_fn_name = get_gen_method_name(orig_fn_name);
-
     let js_name = format!("{}", orig_fn_name).to_mixed_case();
     let lit = Literal::string(&js_name);
 
+    let toks = method(args, orig_fn_ast);
+    let toks = proc_macro2::TokenStream::from(toks);
+
     let tokens = quote! {
-        #orig_fn_ast
-
-        pub fn #gen_fn_name(cx: &mut neon::prelude::FunctionContext) {
-
-        }
+        #toks
 
         pub fn #register_fn_name(cx: &mut neon::prelude::ModuleContext) -> neon::prelude::NeonResult<()> {
-            cx.export_function(#lit, #orig_fn_name)?;
+            cx.export_function(#lit, #gen_function_name)?;
             Ok(())
         }
     };
@@ -94,7 +92,8 @@ pub fn neon_class(args: TokenStream, input: TokenStream) -> TokenStream {
                     let id = &path.segments.last().unwrap().ident;
                     match id.to_string().as_ref() {
                         "method" => {
-                            return method(args, input);
+                            let orig_method_ast = parse_macro_input!(input as ImplItemMethod);
+                            return method(args, orig_method_ast);
                         }
                         "impl_block" => {
                             return impl_block(args, input);
@@ -172,13 +171,12 @@ fn constructor(_args: TokenStream, input: TokenStream) -> TokenStream {
 ///
 #[doc = include_str!("../docs/method_macro.md")]
 ///
-fn method(args: TokenStream, input: TokenStream) -> TokenStream {
+fn method<T: AnnotatedFn + quote::ToTokens>(args: TokenStream, orig_method_ast: T) -> TokenStream {
     let parsed_args = parse_macro_input!(args as AttributeArgs);
 
-    let orig_method_ast = parse_macro_input!(input as ImplItemMethod);
-    let orig_method_name = &orig_method_ast.sig.ident;
+    let orig_method_name = orig_method_ast.get_name();
     let gen_method_name = get_gen_method_name(orig_method_name);
-    let output = &orig_method_ast.sig.output;
+    let output = orig_method_ast.get_ret_type();
 
     // methods that return a JsResult directly must provide a lifetime so if they do, we use that for the
     // generated method. If they don't (like when they return native rust types) then we default to 'ctx.
@@ -192,19 +190,32 @@ fn method(args: TokenStream, input: TokenStream) -> TokenStream {
     .unwrap();
 
     let ((arg_idents, arg_parsing), cx_is_arg) =
-        utils::parse_rust_fn_args(&orig_method_ast.sig.inputs);
+        utils::parse_rust_fn_args(orig_method_ast.inputs());
 
     let throws_on_err = utils::throws_on_err(&parsed_args);
     let (output, native_method_result_parser) =
         utils::parse_return_type(output, &output_lifetime, throws_on_err);
 
     let native_method_call = if cx_is_arg {
-        quote! {
-            this.#orig_method_name(&mut cx, #(#arg_idents,)*)
+        if orig_method_ast.is_method() {
+            quote! {
+                this.#orig_method_name(&mut cx, #(#arg_idents,)*)
+            }
+        } else {
+            quote! {
+                #orig_method_name(&mut cx, #(#arg_idents,)*)
+            }
         }
     } else {
-        quote! {
-            this.#orig_method_name(#(#arg_idents,)*)
+        #[allow(clippy::collapsible_else_if)]
+        if orig_method_ast.is_method() {
+            quote! {
+                this.#orig_method_name(#(#arg_idents,)*)
+            }
+        } else {
+            quote! {
+                #orig_method_name(#(#arg_idents,)*)
+            }
         }
     };
 
@@ -219,24 +230,33 @@ fn method(args: TokenStream, input: TokenStream) -> TokenStream {
         native_method_call
     };
 
-    let tokens = quote! {
-        #orig_method_ast
-
-        ///
-        #gen_doc
-        pub fn #gen_method_name<#output_lifetime>(mut cx: neon::prelude::FunctionContext<#output_lifetime>) #output {
-            use neon::prelude::Object;
-            // required by the expansion of `arg_parsing`
-            use neon_serde::errors::MapErrIntoThrow;
-
-            #(#arg_parsing)*
-
+    let this_extract_tokens = if orig_method_ast.is_method() {
+        quote! {
             let this = cx.this();
             let this = this.get(&mut cx, Self::THIS)?
                 .downcast_or_throw::<neon::prelude::JsBox<Self>, _>(&mut cx)?;
-
-            #return_call
         }
+    } else {
+        // if this is not a method we don't need the 'this' binding.
+        quote! {}
+    };
+
+    let tokens = quote! {
+            #orig_method_ast
+
+            ///
+            #gen_doc
+            pub fn #gen_method_name<#output_lifetime>(mut cx: neon::prelude::FunctionContext<#output_lifetime>) #output {
+                use neon::prelude::Object;
+                // required by the expansion of `arg_parsing`
+                use neon_serde::errors::MapErrIntoThrow;
+
+                #(#arg_parsing)*
+
+                #this_extract_tokens
+
+                #return_call
+            }
     };
 
     tokens.into()
