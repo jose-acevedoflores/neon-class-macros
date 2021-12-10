@@ -142,6 +142,15 @@ pub(crate) fn test<'ctx>(
     Ok(p)
 }
 
+#[neon_class_macros::function(throw_on_err)]
+pub fn standalone_function(a_str: String, num: f64) -> Result<String, &'static str> {
+    if num > 79.412 {
+        return Err("bad num");
+    }
+
+    Ok(format!("Got some stuff from {}", a_str))
+}
+
 /// This Struct is to test a constructor that takes in the [`FunctionContext`] as
 /// the first argument.
 #[allow(dead_code)]

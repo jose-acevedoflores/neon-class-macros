@@ -65,6 +65,18 @@ describe("TestStruct", () => {
   });
 });
 
+describe("call 'standalone_function' with throw_on_err", () => {
+  test("result ok", () => {
+    const arg = "js";
+    const res = mod.standaloneFunction(arg, 23.12);
+    expect(res).toBe(`Got some stuff from ${arg}`);
+  });
+
+  test("result err", () => {
+    expect(() => mod.standaloneFunction("", 100)).toThrow("bad num");
+  });
+});
+
 describe("TestStruct2", () => {
   test("constructor_with_cx", (done) => {
     const obj = new mod.TestStruct2(p, map, (arg) => {
