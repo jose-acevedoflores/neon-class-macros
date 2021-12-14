@@ -64,8 +64,7 @@ For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived
 
 1. Add [this fork](https://github.com/NZXTCorp/neon-serde) of `neon_serde` to your deps. This crate relies heavily on [this fork](https://github.com/NZXTCorp/neon-serde) of the `neon_serde` crate for
    serializing and deserializing a decorated method's inputs/outputs.
-   if you use this crate.
-2. Follow examples
+2. Follow [`examples`](./node_tests/src/derived_class.rs)
 
 ## API
 
@@ -105,6 +104,11 @@ Optional args:
   - with this arg the `E` will be shown as a message on the JS side.\
     See [`take_numeric_return_result`](./node_tests/src/derived_class.rs) and the corresponding
     [`takeNumericReturnResult`](./node_tests/derivedClass.test.js) test.
+
+#### `neon_class_macros::function(...)`
+
+Similar to the `neon_class(method, ...)` but for plain functions. See [`standalone_function`](./node_tests/src/derived_class.rs) and the corresponding
+[`standaloneFunction`](./node_tests/derivedClass.test.js) test.
 
 ## Build Dependencies
 
