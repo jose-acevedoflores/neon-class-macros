@@ -24,7 +24,8 @@ serde = { version = "1.0", features = ["derive"] }
 syn = { version = "1.0", features = ["full"] }
 
 [dev-dependencies]
-neon-serde = { git = "https://github.com/NZXTCorp/neon-serde.git", branch = "refactor/update-neon-0.10" }
+# this rev is from branch 'refactor/update-neon-0.10'
+neon-serde = { git = "https://github.com/NZXTCorp/neon-serde.git", rev = "d309f321cbe594359c55d858ff01af4900313861" }
 
 [dependencies.neon]
 version = "=0.10.0-alpha.2"

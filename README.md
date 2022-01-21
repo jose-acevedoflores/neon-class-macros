@@ -62,7 +62,8 @@ For more examples checkout out the [`derived_class.rs`](./node_tests/src/derived
 
 ## How to use
 
-1. Add [this fork](https://github.com/NZXTCorp/neon-serde) of `neon_serde` to your deps. This crate relies heavily on [this fork](https://github.com/NZXTCorp/neon-serde) of the `neon_serde` crate for
+1. Add [this fork](https://github.com/NZXTCorp/neon-serde/tree/refactor/update-neon-0.10) of `neon_serde` to your deps.
+   This crate relies heavily on [this fork](https://github.com/NZXTCorp/neon-serde/tree/refactor/update-neon-0.10) of the `neon_serde` crate for
    serializing and deserializing a decorated method's inputs/outputs.
 2. Follow [`examples`](./node_tests/src/derived_class.rs)
 
