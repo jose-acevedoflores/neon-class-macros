@@ -23,14 +23,14 @@ quote = "1"
 serde = { version = "1.0", features = ["derive"] }
 syn = { version = "1.0", features = ["full"] }
 
-[dev-dependencies]
-# this rev is from branch 'refactor/update-neon-0.10'
-neon-serde = { git = "https://github.com/NZXTCorp/neon-serde.git", rev = "d309f321cbe594359c55d858ff01af4900313861" }
-
 [dependencies.neon]
 version = "=0.10.0-alpha.2"
 default-features = false
 features = ["napi-6"]
+
+[dev-dependencies]
+# this rev is from branch 'refactor/update-neon-0.10'
+neon-serde = { git = "https://github.com/NZXTCorp/neon-serde.git", rev = "d309f321cbe594359c55d858ff01af4900313861" }
 
 [features]
 # NOTE: the channel and promise api features are only needed when compiling the tests so enable them when running the tests

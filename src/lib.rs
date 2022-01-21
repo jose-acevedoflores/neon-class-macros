@@ -271,24 +271,25 @@ fn method<T: AnnotatedFn + quote::ToTokens>(args: TokenStream, orig_method_ast: 
 fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
     let mut impl_ast = parse_macro_input!(input as ItemImpl);
 
+    // Find the struct name for this impl block i.e. for `impl MyStruct { ...`
+    // the struct_name is MyStruct.
+    let (struct_name, struct_name_as_str) = if let Type::Path(arg) = impl_ast.self_ty.as_ref() {
+        let name = &arg.path.segments.last().unwrap().ident;
+        (Literal::string(&name.to_string()), name.to_string())
+    } else {
+        panic!("No struct_name for impl block")
+    };
+
     // adds a THIS const to the `impl` block.
     let this_token = {
+        let this = Literal::string(&format!("__this_{}", struct_name_as_str));
         let this = quote! {
-            const THIS: &'static str ="__this_obj";
+            const THIS: &'static str = #this;
         };
         let this: proc_macro::TokenStream = this.into();
         parse_macro_input!(this as ImplItemConst)
     };
     impl_ast.items.push(ImplItem::Const(this_token));
-
-    // Find the struct name for this impl block i.e. for `impl MyStruct { ...`
-    // the struct_name is MyStruct.
-    let struct_name = if let Type::Path(arg) = impl_ast.self_ty.as_ref() {
-        let name = &arg.path.segments.last().unwrap().ident;
-        Literal::string(&name.to_string())
-    } else {
-        panic!("No struct_name for impl block")
-    };
 
     // find the decorated methods we care about, those with neon_class(...)
     let attrs_for_each_decorated_method = impl_ast
@@ -310,7 +311,7 @@ fn impl_block(_args: TokenStream, input: TokenStream) -> TokenStream {
         This could be because:\n  \
           1. none are implemented, in which case the 'impl_block' decoration can be removed.\n  \
           2. the 'neon_class' macro was renamed to something else. This is currently not supported.",
-               struct_name.to_string()
+               struct_name
         );
     }
 
