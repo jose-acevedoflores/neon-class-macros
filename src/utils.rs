@@ -5,7 +5,7 @@ use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::{
     FnArg, GenericArgument, ImplItemMethod, ItemFn, Lifetime, Meta, NestedMeta, Pat, PathArguments,
-    ReturnType, Type, TypePath,
+    PathSegment, ReturnType, Type, TypePath,
 };
 
 pub(crate) trait AnnotatedFn {
@@ -53,6 +53,22 @@ impl AnnotatedFn for ItemFn {
 
 fn is_native_numeric(arg_type: &Ident) -> bool {
     arg_type == "u32" || arg_type == "f64" || arg_type == "i32"
+}
+
+fn is_neon_handle(arg_type: &Ident) -> bool {
+    arg_type == "Handle"
+}
+
+fn extract_neon_handle_type(arg_type: &PathSegment) -> &TypePath {
+    if let PathArguments::AngleBracketed(a) = &arg_type.arguments {
+        if let GenericArgument::Type(Type::Path(p)) =
+            a.args.last().expect("Should have a neon type")
+        {
+            return p;
+        }
+    }
+
+    panic!("Could not extract the neon Handle type: Handle<'_, THIS TYPE>");
 }
 
 pub type CxIsArg = bool;
@@ -104,9 +120,19 @@ fn extract_from_native_input_type(arg_idx: usize, arg: &TypePath) -> (Ident, Tok
     let idx_literal = Literal::i32_unsuffixed(arg_idx as i32);
 
     let arg_type = arg.path.get_ident().filter(|i| is_native_numeric(i));
+    let is_neon_handle = arg
+        .path
+        .segments
+        .last()
+        .filter(|se| is_neon_handle(&se.ident));
     let tok = if let Some(arg_type) = arg_type {
         quote! {
             let #arg_ident = cx.argument::<neon::prelude::JsNumber>(#idx_literal)?.value(&mut cx) as #arg_type;
+        }
+    } else if let Some(arg_type) = is_neon_handle {
+        let ty = extract_neon_handle_type(arg_type);
+        quote! {
+            let #arg_ident = cx.argument::<#ty>(#idx_literal)?;
         }
     } else {
         quote! {

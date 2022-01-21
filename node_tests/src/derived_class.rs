@@ -1,4 +1,6 @@
-use neon::prelude::{Context, Finalize, FunctionContext, JsFunction, JsPromise, JsResult, Object};
+use neon::prelude::{
+    Context, Finalize, FunctionContext, Handle, JsFunction, JsPromise, JsResult, Object,
+};
 use neon::types::JsString;
 use neon_class_macros::neon_class;
 use serde::{Deserialize, Serialize};
@@ -118,6 +120,12 @@ impl TestStruct {
                 .unwrap_or("NONE".to_string())
         )
     }
+
+    /// This is just to make sure we can have non exported methods in between exported ones.
+    #[allow(unused)]
+    pub fn non_decorated_method(&self, p: String) {
+        println!("Not accessible from js {}-{:?}", p, self.a_path);
+    }
 }
 
 // Needed for the try_build tests.
@@ -203,6 +211,19 @@ impl TestStruct2 {
             a_map,
             bg_handle,
         })
+    }
+
+    #[neon_class(method)]
+    pub fn method_with_neon_args<'ctx>(
+        &self,
+        cx: &mut FunctionContext<'ctx>,
+        cb: neon::prelude::Handle<'ctx, neon::prelude::JsFunction>,
+        y: u32,
+        passed_obj: Handle<'ctx, neon::prelude::JsValue>,
+    ) {
+        let obj = neon_serde::to_value(cx, &format!("mixed-{:?}-{}", self.a_path, y)).unwrap();
+        let null = cx.null();
+        cb.call(cx, null, vec![obj, passed_obj]).unwrap();
     }
 }
 

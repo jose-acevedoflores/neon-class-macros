@@ -89,4 +89,20 @@ describe("TestStruct2", () => {
     });
     expect(obj).toBeDefined();
   });
+
+  test("call 'method_with_neon_args'", (done) => {
+    const obj = new mod.TestStruct2(p, map, () => {});
+    const cbArg = 3;
+    const echo = "raw_js_value";
+    const cb = (arg, echoed) => {
+      try {
+        expect(arg).toBe(`mixed-"${p}"-${cbArg}`);
+        expect(echoed).toBe(echo);
+        done();
+      } catch (error) {
+        done(error);
+      }
+    };
+    obj.methodWithNeonArgs(cb, cbArg, echo);
+  });
 });
